@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Follow Lwang Black on Social Media | Instagram, Facebook & TikTok</title>
+  <meta name="description" content="Join the Lwang Black community on Instagram, Facebook, and TikTok. Watch brew guides, behind-the-scenes, and get inspired by Nepal's boldest coffee culture." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://www.lwangblack.com.au/social-media" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Follow Lwang Black on Social Media" />
+  <meta property="og:description" content="Follow us on Instagram, Facebook, and TikTok for brew guides, stories, and exclusive deals from Nepal's boldest coffee brand." />
+  <meta property="og:url" content="https://www.lwangblack.com.au/social-media" />
+  <meta property="og:image" content="images/logo-hero.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Follow Lwang Black on Social Media" />
+  <meta name="twitter:description" content="Join our community on Instagram, Facebook & TikTok." />
+  <meta name="twitter:image" content="images/logo-hero.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <!-- JSON-LD Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Lwang Black",
+    "url": "https://www.lwangblack.com.au",
+    "sameAs": [
+      "https://www.facebook.com/profile.php?id=61573596402127",
+      "https://www.instagram.com/lwangblack/",
+      "https://www.tiktok.com/@lwangblack"
+    ]
+  }
+  </script>
+
+  <style>
+    .social-channels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+      width: 100%;
+      margin-top: 4rem;
+    }
+    .social-card {
+      position: relative;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 4rem 3rem;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      background: rgba(10, 11, 10, 0.5);
+      cursor: pointer;
+    }
+    .social-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.5s;
+      border-radius: 16px;
+    }
+    .social-card.instagram::before { background: linear-gradient(135deg, rgba(131,58,180,0.1), rgba(253,29,29,0.08), rgba(252,176,69,0.08)); }
+    .social-card.facebook::before { background: linear-gradient(135deg, rgba(24,119,242,0.1), rgba(10,11,10,0)); }
+    .social-card.tiktok::before { background: linear-gradient(135deg, rgba(0,0,0,0), rgba(105,201,208,0.08), rgba(254,44,85,0.08)); }
+    .social-card:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-6px); }
+    .social-card:hover::before { opacity: 1; }
+    .social-icon {
+      width: 60px;
+      height: 60px;
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+    .social-platform {
+      font-family: var(--font-micro);
+      font-size: 0.6rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 1;
+    }
+    .social-name {
+      font-family: var(--font-heading);
+      font-size: clamp(2rem, 4vw, 3rem);
+      color: var(--text-primary);
+      position: relative;
+      z-index: 1;
+      line-height: 1.1;
+    }
+    .social-desc {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      position: relative;
+      z-index: 1;
+      flex-grow: 1;
+    }
+    .social-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: var(--font-micro);
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 0.8rem 1.8rem;
+      border-radius: 50px;
+      transition: all 0.3s;
+      position: relative;
+      z-index: 1;
+      align-self: flex-start;
+    }
+    .social-card:hover .social-cta {
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      border-color: var(--text-primary);
+    }
+    .social-stat {
+      font-family: var(--font-heading);
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 1;
+    }
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    @media (max-width: 700px) {
+      .highlights-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .highlight-square {
+      aspect-ratio: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .highlight-label {
+      font-family: var(--font-micro);
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .highlight-value {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PRELOADER -->
+  <div id="preloader">
+      <div class="spinner"></div>
+      <img src="images/logo-hero.png" alt="Lwang Black" style="height: 60px; object-fit: contain;" onerror="this.style.display='none'" />
+  </div>
+
+  <!-- NAVIGATION -->
+  <nav class="site-nav">
+      <div class="nav-links">
+          <a href="index.html">HOME</a>
+          <a href="catalogue.html">CATALOGUE</a>
+      </div>
+      <a href="index.html" class="nav-brand">
+          <img src="images/logo-hero.png" alt="Lwang Black Logo" onerror="this.style.display='none';" />
+      </a>
+      <div class="nav-links">
+          <a href="health-benefits.html">BENEFITS</a>
+          <a href="catalogue.html" class="btn-solid" style="padding: 0.5rem 1.5rem;">SHOP NOW</a>
+      </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="fullscreen-section centered hero" style="min-height: 70vh; padding-top: 10rem;">
+      <div class="hero-reveal" style="text-align: center;">
+          <h1 class="title-massive" style="font-size: clamp(3rem, 8vw, 6rem);">JOIN THE<br />MOVEMENT</h1>
+          <div class="vertical-line" style="margin: 2rem auto; height: 60px;"></div>
+          <p class="subtitle" style="margin: 0 auto;">Follow us for brew guides, behind-the-scenes, community spotlights, and exclusive offers across all platforms.</p>
+      </div>
+  </section>
+
+  <!-- SOCIAL CHANNELS -->
+  <section class="fullscreen-section" style="padding: 5rem 5vw 10rem; flex-direction: column; align-items: flex-start;">
+      <div style="width: 100%; max-width: 1400px; margin: 0 auto;">
+
+          <div class="gsap-reveal-up">
+              <span class="label-micro">Our Platforms</span>
+              <h2 class="title-large" style="margin-bottom: 0;">FIND US<br />EVERYWHERE</h2>
+          </div>
+
+          <div class="social-channels">
+
+            <!-- Instagram -->
+            <a href="https://www.instagram.com/lwangblack/" target="_blank" rel="noopener" class="social-card instagram gsap-reveal-up">
+              <div class="social-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                </svg>
+              </div>
+              <p class="social-platform">Instagram</p>
+              <h2 class="social-name">@lwangblack</h2>
+              <p class="social-desc">Follow us for daily brew inspiration, clove coffee recipes, behind-the-scenes from Nepal, and community highlights. Tap into the lifestyle.</p>
+              <p class="social-stat">Coffee culture · Brew tips · Nepal</p>
+              <span class="social-cta">
+                Follow on Instagram
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </a>
+
+            <!-- Facebook -->
+            <a href="https://www.facebook.com/profile.php?id=61573596402127" target="_blank" rel="noopener" class="social-card facebook gsap-reveal-up">
+              <div class="social-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                </svg>
+              </div>
+              <p class="social-platform">Facebook</p>
+              <h2 class="social-name">Lwang Black</h2>
+              <p class="social-desc">Stay updated with product launches, promotions, and community events. Join our growing family of coffee enthusiasts and be the first to know.</p>
+              <p class="social-stat">Updates · Events · Community</p>
+              <span class="social-cta">
+                Like on Facebook
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </a>
+
+            <!-- TikTok -->
+            <a href="https://www.tiktok.com/@lwangblack" target="_blank" rel="noopener" class="social-card tiktok gsap-reveal-up">
+              <div class="social-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
+                </svg>
+              </div>
+              <p class="social-platform">TikTok</p>
+              <h2 class="social-name">@lwangblack</h2>
+              <p class="social-desc">Watch short-form brew videos, clove coffee experiments, and funny behind-the-scenes moments. Our TikTok is where the energy lives.</p>
+              <p class="social-stat">Brew videos · Fun · Trending</p>
+              <span class="social-cta">
+                Follow on TikTok
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </span>
+            </a>
+
+          </div>
+
+          <!-- Stats -->
+          <div class="highlights-grid gsap-reveal-up" style="margin-top: 4rem;">
+            <div class="highlight-square">
+              <span class="highlight-value">5K+</span>
+              <span class="highlight-label">Instagram Followers</span>
+            </div>
+            <div class="highlight-square">
+              <span class="highlight-value">3K+</span>
+              <span class="highlight-label">Facebook Likes</span>
+            </div>
+            <div class="highlight-square">
+              <span class="highlight-value">10K+</span>
+              <span class="highlight-label">TikTok Views</span>
+            </div>
+          </div>
+      </div>
+  </section>
+
+  <!-- NEWSLETTER CTA -->
+  <section class="fullscreen-section centered" style="min-height: 50vh; padding: 5rem 5vw;">
+      <div class="glass-panel gsap-reveal-up" style="text-align: center; max-width: 600px;">
+          <span class="label-micro">Stay In The Loop</span>
+          <h2 class="title-large" style="font-size: clamp(2rem, 5vw, 4rem); margin-bottom: 2rem;">JOIN THE<br />CLUB</h2>
+          <p class="subtitle" style="margin: 0 auto 3rem;">Get 10% off your first order + exclusive early access to new drops. No spam, ever.</p>
+          <a href="index.html#discover" class="btn-solid">GET MY DISCOUNT</a>
+      </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+      <div class="footer-grid">
+          <div class="footer-col">
+              <img src="images/logo-hero.png" alt="Lwang Black Logo" style="height: 30px; margin-bottom: 1.5rem;" />
+              <p style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-micro); text-transform: uppercase;">Din को सुरुवात एक कप Motivation बाट।</p>
+          </div>
+          <div class="footer-col">
+              <span class="label-micro" style="margin-bottom: 1.5rem; color: #fff;">EXPLORE</span>
+              <a href="index.html">HOME</a>
+              <a href="catalogue.html">CATALOGUE</a>
+              <a href="health-benefits.html">HEALTH BENEFITS</a>
+              <a href="reviews.html">REVIEWS</a>
+          </div>
+          <div class="footer-col">
+              <span class="label-micro" style="margin-bottom: 1.5rem; color: #fff;">CONNECT</span>
+              <a href="social-media.html" style="color: var(--text-primary);">SOCIAL MEDIA</a>
+              <a href="contact.html">CONTACT</a>
+              <a href="https://www.instagram.com/lwangblack/" target="_blank" rel="noopener">INSTAGRAM</a>
+              <a href="https://www.facebook.com/profile.php?id=61573596402127" target="_blank" rel="noopener">FACEBOOK</a>
+          </div>
+          <div class="footer-col">
+              <span class="label-micro" style="margin-bottom: 1.5rem; color: #fff;">LEGAL</span>
+              <a href="shipping-policy.html">SHIPPING POLICY</a>
+              <a href="refund-policy.html">REFUND POLICY</a>
+              <a href="privacy-policy.html">PRIVACY POLICY</a>
+              <a href="terms.html">TERMS OF SERVICE</a>
+          </div>
+      </div>
+      <div class="footer-bottom">
+          <span>2026 © LWANG BLACK</span>
+          <span>PAN: 622414599 · REG NO: 372142/82/83</span>
+      </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

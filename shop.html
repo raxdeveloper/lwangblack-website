@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shop Lwang Black – Premium Clove Coffee | Nepal's Boldest Brew</title>
+  <meta name="description" content="Shop Lwang Black's full range: 250g & 500g clove-infused specialty coffee, Drip Bags, French Press, Brewing Pot, Gift Sets, and Apparel. Fast delivery across Nepal." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://www.lwangblack.com.au/shop" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Shop Lwang Black – Clove Coffee Catalogue" />
+  <meta property="og:description" content="250g, 500g, Gift Sets, Accessories. Nepal's premium clove-infused coffee. Fast delivery." />
+  <meta property="og:url" content="https://www.lwangblack.com.au/shop" />
+  <meta property="og:image" content="https://www.lwangblack.com.au/images/product-hero-500g.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Shop Lwang Black – Clove Coffee" />
+  <meta name="twitter:description" content="250g, 500g, Gift Sets, Accessories. Fast delivery across Nepal." />
+  <meta name="twitter:image" content="https://www.lwangblack.com.au/images/product-hero-500g.jpg" />
+
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Lwang Black Products",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Lwang Black 250g", "url": "https://www.lwangblack.com.au/shop" },
+      { "@type": "ListItem", "position": 2, "name": "Lwang Black 500g", "url": "https://www.lwangblack.com.au/shop" },
+      { "@type": "ListItem", "position": 3, "name": "Pot & Press Gift Set", "url": "https://www.lwangblack.com.au/shop" }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <style>
+    .filters-container {
+      display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 5rem; justify-content: center;
+    }
+    .filter-btn {
+      background: transparent; border: 1px solid var(--border-color); color: var(--text-muted);
+      padding: 0.6rem 1.8rem; border-radius: 50px; font-family: var(--font-micro);
+      font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary);
+    }
+    .variant-options { display: flex; gap: 0.5rem; margin-top: 1rem; margin-bottom: 1rem; }
+    .variant-btn {
+      background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 0.4rem 0.8rem;
+      border-radius: 4px; font-family: var(--font-micro); font-size: 0.65rem; cursor: pointer; transition: 0.3s;
+    }
+    .variant-btn.selected { background: var(--text-primary); color: var(--bg-primary); }
+    .product-badge {
+      position: absolute;
+      top: 1rem; left: 1rem;
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      font-family: var(--font-micro);
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 0.3rem 0.8rem;
+      border-radius: 50px;
+    }
+    .product-card { position: relative; }
+    #cartToast {
+      position: fixed; bottom: 40px; right: 40px; background: var(--accent); color: #fff;
+      font-family: var(--font-micro); font-size: 0.8rem; letter-spacing: 1px; padding: 1rem 2rem;
+      border-radius: 50px; z-index: 10000; text-transform: uppercase;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(100px); opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #cartToast.show { transform: translateY(0); opacity: 1; }
+    .shop-hero-tagline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 3rem;
+      flex-wrap: wrap;
+    }
+    .tagline-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      border: 1px solid var(--border-color);
+      border-radius: 50px;
+      padding: 0.6rem 1.5rem;
+      font-family: var(--font-micro);
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PRELOADER -->
+  <div id="preloader">
+      <div class="spinner"></div>
+      <img src="images/logo-hero.png" alt="Lwang Black" style="height: 60px; object-fit: contain;" onerror="this.style.display='none'" />
+  </div>
+
+  <!-- NAVIGATION -->
+  <nav class="site-nav">
+      <div class="nav-links">
+          <a href="index.html">HOME</a>
+          <a href="shop.html" style="color: var(--accent);">SHOP</a>
+          <a href="reviews.html">REVIEWS</a>
+      </div>
+      <a href="index.html" class="nav-brand">
+          <img src="images/logo-hero.png" alt="Lwang Black Logo" onerror="this.style.display='none';" />
+      </a>
+      <div class="nav-links">
+          <a href="health-benefits.html">BENEFITS</a>
+          <a href="contact.html">CONTACT</a>
+          <a href="shop.html" class="btn-solid" style="padding: 0.5rem 1.5rem;">SHOP NOW</a>
+      </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="fullscreen-section centered hero" style="min-height: 70vh; padding-top: 10rem;">
+      <div class="hero-reveal" style="text-align: center;">
+          <span class="label-micro">CLOVE + COFFEE · NEPAL'S FINEST</span>
+          <h1 class="title-massive" style="font-size: clamp(4rem, 10vw, 8rem);">THE<br />SHOP</h1>
+          <div class="vertical-line" style="margin: 2rem auto; height: 60px;"></div>
+          <p class="subtitle" style="margin: 0 auto 2rem;">Clove coffee, accessories, bundles &amp; apparel — all crafted with intention.</p>
+          <div class="shop-hero-tagline">
+              <span class="tagline-pill">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 8 8z"/></svg>
+                  Free delivery on orders over Rs 3,000
+              </span>
+              <span class="tagline-pill">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  Quality guaranteed
+              </span>
+              <span class="tagline-pill">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  KTM delivery 1–3 days
+              </span>
+          </div>
+      </div>
+  </section>
+
+  <!-- PRODUCTS SECTION -->
+  <section class="fullscreen-section" style="align-items: flex-start; min-height: auto; padding: 3rem 5vw 10rem;">
+      <div style="width: 100%; max-width: 1400px; margin: 0 auto;" class="gsap-reveal-up">
+
+          <div class="filters-container">
+              <button class="filter-btn active" data-filter="all">ALL</button>
+              <button class="filter-btn" data-filter="coffee">COFFEE</button>
+              <button class="filter-btn" data-filter="accessories">ACCESSORIES</button>
+              <button class="filter-btn" data-filter="bundles">BUNDLES</button>
+              <button class="filter-btn" data-filter="apparel">APPAREL</button>
+          </div>
+
+          <div class="product-grid">
+
+              <!-- 250G -->
+              <div class="product-card" data-category="coffee" id="product-250g">
+                  <div class="product-badge">BESTSELLER</div>
+                  <img src="images/product-hero-250g.jpg" alt="250G Lwang Black Clove Coffee" class="product-img" />
+                  <span class="label-micro" style="margin-bottom: 0.5rem;">COFFEE / 250G</span>
+                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Lwang Black 250G</h2>
+                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Our signature clove-infused specialty Arabica. Bold, aromatic, and loaded with antioxidants. Perfect starter size.</p>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 1,599</span>
+                      <button class="btn-solid add-btn" data-name="250G Lwang Black" data-price="1599" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
+                  </div>
+              </div>
+
+              <!-- 500G -->
+              <div class="product-card" data-category="coffee" id="product-500g">
+                  <div class="product-badge">POPULAR</div>
+                  <img src="images/product-hero-500g.jpg" alt="500G Lwang Black Clove Coffee" class="product-img" />
+                  <span class="label-micro" style="margin-bottom: 0.5rem;">COFFEE / 500G</span>
+                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Lwang Black 500G</h2>
+                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">The full Lwang Black experience. Rich clove fusion with specialty Arabica. Bold, deep, and satisfying every single cup.</p>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 2,599</span>
+                      <button class="btn-solid add-btn" data-name="500G Lwang Black" data-price="2599" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
+                  </div>
+              </div>
+
+              <!-- DRIP BAGS -->
+              <div class="product-card" data-category="coffee">
+                  <img src="images/catalogue-1.jpg" alt="Lwang Black Drip Coffee Bags" class="product-img" />
+                  <span class="label-micro" style="margin-bottom: 0.5rem;">COFFEE / DRIP</span>
+                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Drip Coffee Bags</h2>
+                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Convenient single-serve drip bags. Perfect taste anywhere — no equipment needed. Clove goodness on the go.</p>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 1,499</span>
+                      <button class="btn-solid add-btn" data-name="Drip Coffee Bags" data-price="1499" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
+                  </div>
+              </div>
+
+              <!-- FRENCH PRESS -->
+              <div class="product-card" data-category="accessories">
+                  <img src="images/catalogue-2.jpg" alt="French Press by Lwang Black" class="product-img" />
+                  <span class="label-micro" style="margin-bottom: 0.5rem;">ACCESSORIES</span>
+                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">French Press</h2>
+                  <p style="margin-bottom: 1rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">450ml plunge for the perfect brew. Built to maximize flavor extraction with every press.</p>
+                  <div class="variant-options">
+                      <button class="variant-btn selected">GREY</button>
+                      <button class="variant-btn">WHITE</button>
+                      <button class="variant-btn">BLACK</button>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 1,899</span>
+                      <button class="btn-solid add-btn" data-name="French Press" data-price="1899" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
+                  </div>
+              </div>
+
+              <!-- BREWING POT -->
+              <div class="product-card" data-category="accessories">
+                  <img src="images/catalogue-2.jpg" alt="Lwang Black Brewing Pot" class="product-img" />
+                  <span class="label-micro" style="margin-bottom: 0.5rem;">ACCESSORIES</span>
+                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Brewing Pot</h2>
+                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Hand-crafted premium brewing pot. Designed to maximize the clove fusion flavor and aroma with every brew.</p>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 1,299</span>
+                      <button class="btn-solid add-btn" data-name="Brewing Pot" data-price="1299" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
+                  </div>
+              </div>
+
+              <!-- DRIP & SIP -->
+              <div class="product-card" data-category="accessories">
+                  <img src="images/catalogue-3.jpg" alt="LB Drip & Sip Set" class="product-img" />
+                  <span class="label-micro" style="margin-bottom: 0.5rem;">ACCESSORIES / SET</span>
+                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Drip &amp; Sip Set</h2>
+                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Complete drip setup — everything you need for a perfect, clean cup. Minimalist, precise, effortless.</p>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 2,599</span>
+                      <button class="btn-solid add-btn" data-name="Drip & Sip Set" data-price="2599" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
+                  </div>
+              </div>
+
+              <!-- GIFT SET -->
+              <div class="product-card" data-category="bundles" id="product-giftset">
+                  <div class="product-badge">🎁 FREE T-SHIRT</div>
+                  <img src="images/product-hero-giftset.jpg" alt="Pot & Press Gift Set" class="product-img" />
+                  <span class="label-micro" style="margin-bottom: 0.5rem; color: var(--accent);">BUNDLE — BEST VALUE</span>
+                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Pot &amp; Press Gift Set</h2>
+                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">500g coffee + Drip &amp; Sip Set + Free Lwang Black T-shirt. The ultimate gift for coffee lovers.</p>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 6,699</span>
+                      <button class="btn-solid add-btn" data-name="Pot & Press Gift Set" data-price="6699" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
+                  </div>
+              </div>
+
+              <!-- 2.0 COMBO -->
+              <div class="product-card" data-category="bundles">
+                  <img src="images/catalogue-3.jpg" alt="Lwang Black 2.0 Combo Set" class="product-img" />
+                  <span class="label-micro" style="margin-bottom: 0.5rem;">BUNDLE</span>
+                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">2.0 Combo Set</h2>
+                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Two French Presses + 500g Lwang Black. Built for sharing the bold clove experience with someone special.</p>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 6,099</span>
+                      <button class="btn-solid add-btn" data-name="2.0 Combo Set" data-price="6099" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
+                  </div>
+              </div>
+
+              <!-- T-SHIRT -->
+              <div class="product-card" data-category="apparel">
+                  <img src="images/catalogue-4.jpg" alt="Lwang Black Classic T-Shirt" class="product-img" />
+                  <span class="label-micro" style="margin-bottom: 0.5rem;">APPAREL / LIMITED</span>
+                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Classic T-Shirt</h2>
+                  <p style="margin-bottom: 1rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Premium cotton tee with the Lwang Black tiger crest. Limited run. Wear the movement.</p>
+                  <div class="variant-options">
+                      <button class="variant-btn selected">S</button>
+                      <button class="variant-btn">M</button>
+                      <button class="variant-btn">L</button>
+                      <button class="variant-btn">XL</button>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 995</span>
+                      <button class="btn-solid add-btn" data-name="Classic T-Shirt" data-price="995" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
+                  </div>
+              </div>
+
+          </div>
+      </div>
+  </section>
+
+  <!-- WHY US STRIP -->
+  <section class="fullscreen-section centered" style="min-height: 40vh; padding: 4rem 5vw; background: rgba(255,255,255,0.02);">
+      <div class="gsap-reveal-up" style="width: 100%; max-width: 1200px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 3rem; text-align: center;">
+          <div>
+              <p style="font-family: var(--font-heading); font-size: 2.5rem; margin-bottom: 0.5rem;">247+</p>
+              <p style="font-family: var(--font-micro); font-size: 0.65rem; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase;">Happy Customers</p>
+          </div>
+          <div>
+              <p style="font-family: var(--font-heading); font-size: 2.5rem; margin-bottom: 0.5rem;">4.9★</p>
+              <p style="font-family: var(--font-micro); font-size: 0.65rem; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase;">Average Rating</p>
+          </div>
+          <div>
+              <p style="font-family: var(--font-heading); font-size: 2.5rem; margin-bottom: 0.5rem;">1–3</p>
+              <p style="font-family: var(--font-micro); font-size: 0.65rem; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase;">Days KTM Delivery</p>
+          </div>
+          <div>
+              <p style="font-family: var(--font-heading); font-size: 2.5rem; margin-bottom: 0.5rem;">100%</p>
+              <p style="font-family: var(--font-micro); font-size: 0.65rem; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase;">Natural Ingredients</p>
+          </div>
+      </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+      <div class="footer-grid">
+          <div class="footer-col">
+              <img src="images/logo-hero.png" alt="Lwang Black Logo" style="height: 30px; margin-bottom: 1.5rem;" />
+              <p style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-micro); text-transform: uppercase;">Din को सुरुवात एक कप Motivation बाट।</p>
+          </div>
+          <div class="footer-col">
+              <span class="label-micro" style="margin-bottom: 1.5rem; color: #fff;">EXPLORE</span>
+              <a href="index.html">HOME</a>
+              <a href="shop.html">SHOP</a>
+              <a href="health-benefits.html">HEALTH BENEFITS</a>
+              <a href="reviews.html">REVIEWS</a>
+          </div>
+          <div class="footer-col">
+              <span class="label-micro" style="margin-bottom: 1.5rem; color: #fff;">CONNECT</span>
+              <a href="social-media.html">SOCIAL MEDIA</a>
+              <a href="contact.html">CONTACT</a>
+              <a href="https://www.instagram.com/lwangblack/" target="_blank" rel="noopener">INSTAGRAM</a>
+              <a href="https://www.facebook.com/profile.php?id=61573596402127" target="_blank" rel="noopener">FACEBOOK</a>
+          </div>
+          <div class="footer-col">
+              <span class="label-micro" style="margin-bottom: 1.5rem; color: #fff;">LEGAL</span>
+              <a href="shipping-policy.html">SHIPPING POLICY</a>
+              <a href="return-policy.html">RETURN POLICY</a>
+              <a href="privacy-policy.html">PRIVACY POLICY</a>
+              <a href="terms.html">TERMS OF SERVICE</a>
+          </div>
+      </div>
+      <div class="footer-bottom">
+          <span>2026 © LWANG BLACK</span>
+          <span>PAN: 622414599 · REG NO: 372142/82/83</span>
+      </div>
+  </footer>
+
+  <!-- Toast -->
+  <div id="cartToast">ADDED TO CART</div>
+
+  <script src="script.js"></script>
+  <script>
+    // Filter logic
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const filter = btn.dataset.filter;
+            document.querySelectorAll('.product-card').forEach(card => {
+                if (filter === 'all' || card.dataset.category === filter) {
+                    card.style.display = 'flex';
+                    gsap.fromTo(card, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" });
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            ScrollTrigger.refresh();
+        });
+    });
+
+    // Variants
+    document.querySelectorAll('.variant-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const group = e.target.closest('.variant-options');
+            group.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+
+            // Image fade animation when choosing variants
+            const card = e.target.closest('.product-card');
+            const img = card.querySelector('.product-img');
+            if (img) {
+                gsap.fromTo(img, { opacity: 0.3 }, { opacity: 1, duration: 0.5, ease: "power2.out" });
+            }
+        });
+    });
+
+    // Cart Toast
+    const toast = document.getElementById('cartToast');
+    let toastTimer;
+    document.querySelectorAll('.add-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const name = btn.dataset.name;
+            const price = btn.dataset.price;
+            toast.textContent = `✓ ${name} (Rs ${price}) ADDED TO CART`;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+        });
+    });
+  </script>
+</body>
+</html>
