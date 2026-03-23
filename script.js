@@ -27,6 +27,18 @@ document.addEventListener("DOMContentLoaded", () => {
             { y: 0, opacity: 1, duration: 1.5, ease: "power3.out", stagger: 0.2 }
         );
 
+        // --- HIDE NAVBAR ON SCROLL ---
+        const nav = document.querySelector(".site-nav");
+        if(nav) {
+            window.addEventListener("scroll", () => {
+                if(window.scrollY > 50) {
+                    nav.classList.add("hidden");
+                } else {
+                    nav.classList.remove("hidden");
+                }
+            });
+        }
+
         // --- BACKGROUND PARALLAX BOTTLE EXACT CAPSUL EFFECT ---
         const mainBottle = document.getElementById('mainBottle');
         if (mainBottle) {

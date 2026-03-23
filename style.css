@@ -114,6 +114,11 @@ h1, h2, h3, h4, h5, h6 {
     z-index: 1000;
     background: transparent;
     pointer-events: none;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.site-nav.hidden {
+    transform: translateY(-100%);
+    opacity: 0;
 }
 .site-nav > * { pointer-events: auto; }
 
@@ -187,13 +192,13 @@ h1, h2, h3, h4, h5, h6 {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    width: 120px;
-    height: 120px;
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     font-family: var(--font-heading);
-    font-size: 1.2rem;
+    font-size: 0.95rem;
     font-style: italic;
     position: relative;
     overflow: hidden;
@@ -325,9 +330,10 @@ h1, h2, h3, h4, h5, h6 {
     .btn-solid { padding: 0.6rem 1.2rem; font-size: 0.65rem; }
 
     /* Layout & Sections */
-    .fullscreen-section { padding: 5rem 1.2rem; }
-    .split-section { gap: 2.5rem; }
-    .glass-panel { padding: 2.5rem 1.5rem; }
+    .fullscreen-section { padding: 4rem 1.2rem; min-height: auto; }
+    .split-section { gap: 1.5rem; }
+    .glass-panel { padding: 2rem 1.2rem; }
+    .vertical-line { margin: 2rem auto; height: 60px; }
     
     /* Typography Scaling */
     .title-massive { font-size: clamp(2.5rem, 12vw, 4rem); letter-spacing: -1px; }
