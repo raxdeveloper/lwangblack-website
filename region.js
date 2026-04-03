@@ -15,22 +15,9 @@ function buildRegionSwitcher() {
   wrapper.id = 'regionSwitcher';
 
   wrapper.innerHTML = `
-    <button class="region-switcher-btn" id="regionSwitcherBtn" aria-label="Change Region">
+    <div class="region-switcher-btn" id="regionSwitcherBtn" aria-label="Current Region" style="pointer-events: none; cursor: default; border: none; padding-right: 0;">
       <img class="rs-flag" id="rsFlagDisplay" src="https://flagcdn.com/au.svg" alt="AU" width="18" height="13" />
-      <span class="rs-name" id="rsNameDisplay">Australia</span>
-      <svg class="rs-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none">
-        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-    </button>
-    <div class="region-dropdown" id="regionDropdown" role="listbox">
-      ${regionOrder.map(code => {
-        const r = REGION_DATA[code];
-        const slug = code.toLowerCase() === 'gb' ? 'gb' : code.toLowerCase();
-        return `<button class="region-option" data-code="${code}" role="option">
-          <img class="ro-flag" src="https://flagcdn.com/${slug}.svg" alt="${r.name}" width="20" height="14" />
-          <span class="ro-name">${r.name}</span>
-        </button>`;
-      }).join('')}
+      <span class="rs-name" id="rsNameDisplay" style="color: rgba(255,255,255,0.7);">Australia</span>
     </div>
   `;
 
@@ -70,34 +57,7 @@ function initRegionUI() {
     navBrand.after(flagBar);
   }
 
-  // Dropdown toggle
-  const btn = document.getElementById('regionSwitcherBtn');
-  const dropdown = document.getElementById('regionDropdown');
-
-  if (btn && dropdown) {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dropdown.classList.toggle('open');
-      btn.classList.toggle('active');
-    });
-
-    document.addEventListener('click', () => {
-      dropdown.classList.remove('open');
-      btn.classList.remove('active');
-    });
-    dropdown.addEventListener('click', (e) => e.stopPropagation());
-
-    // Region option clicks
-    dropdown.querySelectorAll('.region-option').forEach(opt => {
-      opt.addEventListener('click', () => {
-        const code = opt.dataset.code;
-        GeoRouter.set(code);
-        dropdown.classList.remove('open');
-        btn.classList.remove('active');
-      });
-    });
-  }
-
+    // DROPDOWN HAS BEEN REMOVED TO LOCK REGION
   // Listen to region changes
   document.addEventListener('lb:regionChanged', (e) => {
     const { code, region } = e.detail;

@@ -239,10 +239,11 @@
         coFix?.appendChild(opt2);
       });
 
-      coSelect?.addEventListener('change', () => LB_REGION.set(coSelect.value));
-      coFix?.addEventListener('change', () => {
-        if (coFix.value) { LB_REGION.set(coFix.value); checkRegion(coFix.value); }
-      });
+    // REGION SWITCHING DISABLED VIA CHECKOUT SELECTION
+    // coSelect?.addEventListener('change', () => LB_REGION.set(coSelect.value));
+    // coFix?.addEventListener('change', () => {
+    //  if (coFix.value) { LB_REGION.set(coFix.value); checkRegion(coFix.value); }
+    // });
     }
 
     // ── Step Navigation ───────────────────────────
