@@ -27,14 +27,23 @@ document.addEventListener("DOMContentLoaded", () => {
             { y: 0, opacity: 1, duration: 1.5, ease: "power3.out", stagger: 0.2 }
         );
 
-        // --- HIDE NAVBAR ON SCROLL ---
+        // --- NAVBAR ENTRANCE ANIMATION ---
+        gsap.fromTo(".site-nav .nav-brand", { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
+        gsap.fromTo(".site-nav .nav-links a, .site-nav .btn-solid", 
+            { y: -20, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: "power2.out", delay: 0.2 }
+        );
+
+        // --- NAVBAR SCROLL ANIMATION ---
         const nav = document.querySelector(".site-nav");
         if(nav) {
             window.addEventListener("scroll", () => {
-                if(window.scrollY > 50) {
-                    nav.classList.add("hidden");
+                // Don't apply fixed scrolling classes if it's explicitly absolute (product page)
+                const isAbsolute = window.getComputedStyle(nav).position === 'absolute';
+                if(window.scrollY > 50 && !isAbsolute) {
+                    nav.classList.add("scrolled");
                 } else {
-                    nav.classList.remove("hidden");
+                    nav.classList.remove("scrolled");
                 }
             });
         }
