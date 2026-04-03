@@ -42,10 +42,13 @@
       
       .variant-options { display: flex; gap: 0.5rem; margin-top: 1rem; margin-bottom: 1rem; }
       .variant-btn {
-          background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 0.4rem 0.8rem;
-          border-radius: 4px; font-family: var(--font-micro); font-size: 0.65rem; cursor: pointer; transition: 0.3s;
+          background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);
+          padding: 0.4rem 0.9rem; font-size: 0.7rem; cursor: pointer; border-radius: 50px;
+          transition: all 0.3s;
+          font-family: var(--font-body); text-transform: uppercase; letter-spacing: 1px;
       }
-      .variant-btn.selected { background: var(--text-primary); color: var(--bg-primary); }
+      .variant-btn:hover { border-color: rgba(255,255,255,0.4); color: #fff; }
+      .variant-btn.selected { background: #fff; color: #0a0b0a; border-color: #fff; font-weight: 500;}
       
       #cartToast {
           position: fixed; bottom: 40px; right: 40px; background: var(--accent); color: #fff;
@@ -211,6 +214,19 @@
                   const group = e.target.closest('.variant-options');
                   group.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('selected'));
                   btn.classList.add('selected');
+                  
+                  // Swap image
+                  const card = btn.closest('.product-card');
+                  const pid = card.dataset.productId;
+                  const vName = btn.dataset.variant || btn.textContent;
+                  const prod = window.LB_PRODUCTS[pid];
+                  if (prod && prod.variantImages && prod.variantImages[vName]) {
+                     const img = card.querySelector('.product-img');
+                     gsap.to(img, { opacity: 0.1, duration: 0.2, onComplete: () => {
+                         img.src = prod.variantImages[vName];
+                         gsap.to(img, { opacity: 1, duration: 0.3 });
+                     }});
+                  }
               });
           });
       }

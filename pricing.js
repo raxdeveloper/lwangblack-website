@@ -77,7 +77,13 @@ const LB_PRODUCTS = {
     description: '450ml plunge for the perfect brew. Built to maximize flavor extraction with every press. Available in three elegant colors.',
     stock: 15,
     allowed_regions: ['NP', 'AU', 'NZ', 'GB', 'CA'],
-    variants: ['GREY', 'WHITE', 'BLACK'],
+    variants: ['Black', 'White', 'Pink', 'Grey'],
+    variantImages: {
+      'Black': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC07397.jpg?v=1768363098',
+      'White': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00397.jpg?v=1768363279',
+      'Pink': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00404.jpg?v=1768363279',
+      'Grey': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00400.jpg?v=1768363260'
+    },
     prices: {
       NP: { amount: 4300,  currency: 'NPR', symbol: 'Rs', display: 'Rs 4,300' },
       AU: { amount: 34.99, currency: 'AUD', symbol: 'A$', display: 'A$34.99'  },
@@ -130,6 +136,21 @@ const LB_PRODUCTS = {
     description: 'The ultimate gift for coffee lovers. Everything they need to brew the perfect clove-infused cup — beautifully packaged.',
     stock: 12,
     allowed_regions: 'ALL',
+    variants: ['White / Red', 'White / Pink', 'White / Grey', 'White / Black', 'Grey / Red', 'Grey / Pink', 'Grey / Grey', 'Grey / Black', 'Black / Red', 'Black / Pink', 'Black / Grey', 'Black / Black'],
+    variantImages: {
+      'White / Red': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/F4388325-8B97-467E-B45D-E5C34FEAE7F5.jpg',
+      'White / Pink': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/9AF4C654-12C1-4F7D-A930-1CDF7B7A30C2.jpg',
+      'White / Grey': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/2D4EE1DA-DFBC-4E6A-AC8C-0F039ADE0069.jpg',
+      'White / Black': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/796890FC-61D1-4938-AF1F-E6E29264BED5.jpg',
+      'Grey / Red': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/03539068-0572-40CE-9DF2-33B956C41BCA.jpg',
+      'Grey / Pink': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/F5B71EA6-F4D6-47ED-8236-225B1A199095.jpg',
+      'Grey / Grey': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/49AB7577-C95E-4153-9DE4-99E08102F854.jpg',
+      'Grey / Black': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/A485C07B-DB10-4C92-A778-36B9C98C7225.jpg',
+      'Black / Red': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/D3AC9061-D210-4674-9FA8-7F8B247E9C00.jpg',
+      'Black / Pink': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/863709A1-C7B4-4F00-BDE3-57C09BCE31A4.jpg',
+      'Black / Grey': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/3F9BE9F0-8DFB-4F0C-B6B1-1032245BC54B.jpg',
+      'Black / Black': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/CF2AB6CD-E6A1-419E-869B-B8275262687D.jpg'
+    },
     prices: {
       NP: { amount: 6699,  currency: 'NPR', symbol: 'Rs',  display: 'Rs 6,699' },
       AU: { amount: 87.00, currency: 'AUD', symbol: 'A$',  display: 'A$87.00'  },
@@ -150,7 +171,14 @@ const LB_PRODUCTS = {
     description: 'Choose your French Press + 500g Lwang Black. Built for sharing the bold clove experience. Pick your color.',
     stock: 8,
     allowed_regions: ['NP', 'AU', 'NZ', 'GB', 'CA'],
-    variants: ['GREY PRESS', 'WHITE PRESS', 'BLACK PRESS'],
+    variants: ['White Pink', 'Black Pink', 'White Grey', 'White Black', 'Black Black'],
+    variantImages: {
+      'White Pink': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00348.jpg?v=1769347132',
+      'Black Pink': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00345.jpg?v=1769347132',
+      'White Grey': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00353.jpg?v=1769347132',
+      'White Black': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00339.jpg?v=1769347132',
+      'Black Black': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/product_image-chatgpt-image-oct-11-2025-04_50_16-pm-8048.webp?v=1769347132'
+    },
     prices: {
       NP: { amount: 10400, currency: 'NPR', symbol: 'Rs',  display: 'Rs 10,400' },
       AU: { amount: 94.99, currency: 'AUD', symbol: 'A$',  display: 'A$94.99'   },
@@ -185,6 +213,13 @@ const LB_PRODUCTS = {
     description: 'The perfect starter bundle. Our 250g clove coffee paired with a beautiful French Press — everything you need to start brewing.',
     stock: 14,
     allowed_regions: ['NP', 'AU', 'NZ', 'GB', 'CA', 'US'],
+    variants: ['Black', 'White', 'Pink', 'Grey'],
+    variantImages: {
+      'Black': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00367.jpg?v=1769326597',
+      'White': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/987FB999-2FF6-42C6-A99E-EB45B8E30F5C.jpg?v=1769326597',
+      'Pink': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/E586F727-3F0C-41ED-B2B2-223ED8EEEB02.jpg?v=1769326597',
+      'Grey': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/959138C9-7A5E-4213-A187-95FFE8BBF6CC.jpg?v=1769326597'
+    },
     prices: {
       NP: { amount: 5400,  currency: 'NPR', symbol: 'Rs',  display: 'Rs 5,400' },
       AU: { amount: 49.99, currency: 'AUD', symbol: 'A$',  display: 'A$49.99'  },
@@ -204,6 +239,13 @@ const LB_PRODUCTS = {
     description: 'Our most popular bundle. The full 500g of Lwang Black coffee with a premium French Press — a serious upgrade to your morning ritual.',
     stock: 18,
     allowed_regions: ['NP', 'AU', 'NZ', 'GB', 'CA', 'US'],
+    variants: ['Black', 'White', 'Pink', 'Grey'],
+    variantImages: {
+      'Black': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00364_9dc3a32f-1021-42c6-b756-caed2cb5f171.jpg',
+      'White': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00361_2b27f562-e26e-4144-8883-a1dfe1efe6d9.jpg',
+      'Pink': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00359.jpg',
+      'Grey': 'https://cdn.shopify.com/s/files/1/0741/9589/4489/files/DSC00357.jpg'
+    },
     prices: {
       NP: { amount: 6400,  currency: 'NPR', symbol: 'Rs',  display: 'Rs 6,400' },
       AU: { amount: 59.99, currency: 'AUD', symbol: 'A$',  display: 'A$59.99'  },
