@@ -247,17 +247,31 @@ const GeoRouter = {
       console.log('[GeoRouter] Bot detected — defaulting to AU');
       return 'AU';
     }
+    // 1. Try our own backend (also logs the visitor)
     try {
-      const res = await fetch('https://ipapi.co/json/', {
-        signal: AbortSignal.timeout(4000)
-      });
+      const res = await fetch('/api/ip-country', { signal: AbortSignal.timeout(3000) });
       const data = await res.json();
-      const raw = (data.country_code || 'AU').toUpperCase();
-      // Map UK → GB
+      if (data.country) {
+        const code = (data.country === 'UK' ? 'GB' : data.country).toUpperCase();
+        const supported = SUPPORTED_CODES.includes(code) ? code : 'NP';
+        // Log visitor in background
+        fetch('/api/analytics/ip-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ country: supported, page: window.location.pathname })
+        }).catch(() => {});
+        return supported;
+      }
+    } catch(e) {}
+    // 2. Fallback to ipapi.co direct
+    try {
+      const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
+      const data = await res.json();
+      const raw = (data.country_code || 'NP').toUpperCase();
       const code = raw === 'UK' ? 'GB' : raw;
-      return SUPPORTED_CODES.includes(code) ? code : 'AU';
+      return SUPPORTED_CODES.includes(code) ? code : 'NP';
     } catch(e) {
-      console.warn('[GeoRouter] IP detection failed, defaulting to AU');
+      console.warn('[GeoRouter] IP detection failed, defaulting to NP');
       return 'AU';
     }
   },

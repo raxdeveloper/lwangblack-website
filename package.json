@@ -1,5 +1,19 @@
 {
+  "name": "lwang-black",
+  "version": "1.0.0",
+  "description": "Lwang Black ecommerce backend",
+  "main": "api/server.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
   "dependencies": {
-    "jimp": "^0.16.13"
+    "stripe": "^14.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
