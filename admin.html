@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lwang Black — Admin Dashboard</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@400;500;600;700&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="ecommerce.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="adm-page">
+
+  <!-- LOGIN OVERLAY -->
+  <div class="adm-login-overlay" id="adm-login">
+    <div class="adm-login-box">
+      <img src="images/logo-hero.png" alt="Lwang Black" style="height:40px; margin-bottom:1.5rem;" onerror="this.style.display='none'" />
+      <h2>Admin Access</h2>
+      <p>Enter your admin credentials to continue</p>
+      <input type="password" class="input-field" id="adm-pass" placeholder="PASSWORD" onkeydown="if(event.key==='Enter') adm_login()" style="text-align:center; letter-spacing:4px;" />
+      <div class="adm-login-err" id="adm-err"></div>
+      <button class="btn-solid" style="margin-top:1.5rem; width:100%;" onclick="adm_login()">LOGIN</button>
+      <p style="font-size:0.65rem; color:rgba(255,255,255,0.2); margin-top:1.5rem; font-family:'Inter',sans-serif;">Default password: lwangblack-admin</p>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="adm-sidebar" id="adm-sidebar">
+    <div class="adm-logo">
+      Lwang Black
+      <span>Admin Dashboard</span>
+    </div>
+    <nav>
+      <div class="adm-nav-item active" onclick="showSection('overview')" id="nav-overview">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Overview
+      </div>
+      <div class="adm-nav-item" onclick="showSection('regions')" id="nav-regions">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Region Analytics
+      </div>
+      <div class="adm-nav-item" onclick="showSection('products')" id="nav-products">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Products
+      </div>
+      <div class="adm-nav-item" onclick="showSection('orders')" id="nav-orders">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Orders
+      </div>
+      <div class="adm-nav-item" onclick="showSection('profit')" id="nav-profit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Profit Tracker
+      </div>
+      <div class="adm-nav-item" onclick="showSection('alerts')" id="nav-alerts">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Alerts
+      </div>
+      <div class="adm-nav-item" onclick="showSection('settings')" id="nav-settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+        Settings
+      </div>
+    </nav>
+    <div style="margin-top:auto; padding:1.5rem 1.8rem;">
+      <div style="font-size:0.6rem; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.2); margin-bottom:0.5rem;">Logged in as</div>
+      <div style="font-size:0.75rem; color:rgba(255,255,255,0.5);">Admin</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="adm-main" id="adm-main-content" style="display:none;">
+
+    <!-- OVERVIEW -->
+    <section class="adm-section active" id="sec-overview">
+      <div class="adm-topbar">
+        <h1 class="adm-page-title">Overview</h1>
+        <span id="adm-today" style="font-size:0.7rem; color:rgba(255,255,255,0.4); font-family:'Inter',sans-serif;"></span>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="adm-stats-grid">
+        <div class="adm-stat">
+          <div class="adm-stat-label">Total Revenue</div>
+          <div class="adm-stat-value" id="stat-revenue">—</div>
+          <div class="adm-stat-change up" id="stat-revenue-chg">Loading…</div>
+        </div>
+        <div class="adm-stat">
+          <div class="adm-stat-label">Total Orders</div>
+          <div class="adm-stat-value" id="stat-orders">—</div>
+          <div class="adm-stat-change up" id="stat-orders-chg">Loading…</div>
+        </div>
+        <div class="adm-stat">
+          <div class="adm-stat-label">Avg. Order Value</div>
+          <div class="adm-stat-value" id="stat-aov">—</div>
+          <div class="adm-stat-change up">This month</div>
+        </div>
+        <div class="adm-stat">
+          <div class="adm-stat-label">Active Regions</div>
+          <div class="adm-stat-value" id="stat-regions">—</div>
+          <div class="adm-stat-change up">Countries</div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW -->
+      <div class="adm-grid2">
+        <div class="adm-card">
+          <div class="adm-card-title">Revenue by Day (Last 30 Days)</div>
+          <canvas id="chart-revenue"></canvas>
+        </div>
+        <div class="adm-card">
+          <div class="adm-card-title">Orders by Status</div>
+          <canvas id="chart-status"></canvas>
+        </div>
+      </div>
+
+      <!-- BEST SELLERS -->
+      <div class="adm-card" style="margin-bottom:1.5rem;">
+        <div class="adm-card-title">Best Selling Products</div>
+        <div id="best-sellers-list"></div>
+      </div>
+    </section>
+
+    <!-- REGION ANALYTICS -->
+    <section class="adm-section" id="sec-regions">
+      <div class="adm-topbar">
+        <h1 class="adm-page-title">Region Analytics</h1>
+      </div>
+      <div class="adm-grid2">
+        <div class="adm-card">
+          <div class="adm-card-title">Revenue by Country</div>
+          <canvas id="chart-revenue-country"></canvas>
+        </div>
+        <div class="adm-card">
+          <div class="adm-card-title">Orders by Country</div>
+          <canvas id="chart-orders-country"></canvas>
+        </div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Region Performance Table</div>
+        <div class="adm-table-wrap">
+          <table class="adm-table" id="region-table">
+            <thead>
+              <tr>
+                <th>Country</th>
+                <th>Orders</th>
+                <th>Revenue (USD equiv.)</th>
+                <th>Avg. Order</th>
+                <th>Top Product</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="region-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section class="adm-section" id="sec-products">
+      <div class="adm-topbar">
+        <h1 class="adm-page-title">Products</h1>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">
+          Product Catalog
+          <span style="font-size:0.7rem; color:rgba(255,255,255,0.5);">9 products</span>
+        </div>
+        <div class="adm-table-wrap">
+          <table class="adm-table" id="products-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Regions</th>
+                <th>NPR Price</th>
+                <th>AUD Price</th>
+                <th>USD Price</th>
+                <th>Stock</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="products-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ORDERS -->
+    <section class="adm-section" id="sec-orders">
+      <div class="adm-topbar">
+        <h1 class="adm-page-title">Orders</h1>
+        <div style="display:flex; gap:0.8rem; align-items:center;">
+          <select id="order-filter-status" onchange="renderOrdersTable()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:0.5rem 1rem; border-radius:8px; font-family:'Inter',sans-serif; font-size:0.7rem; outline:none;">
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+          </select>
+          <select id="order-filter-region" onchange="renderOrdersTable()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:0.5rem 1rem; border-radius:8px; font-family:'Inter',sans-serif; font-size:0.7rem; outline:none;">
+            <option value="all">All Regions</option>
+            <option value="NP">Nepal</option>
+            <option value="AU">Australia</option>
+            <option value="US">United States</option>
+            <option value="GB">United Kingdom</option>
+            <option value="CA">Canada</option>
+          </select>
+        </div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-table-wrap">
+          <table class="adm-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Region</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Carrier</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="orders-table-body"></tbody>
+          </table>
+        </div>
+        <div id="orders-empty" style="text-align:center; padding:3rem; font-family:'Inter',sans-serif; font-size:0.8rem; color:rgba(255,255,255,0.3); display:none;">
+          No orders yet. Orders will appear here once customers checkout.
+        </div>
+      </div>
+    </section>
+
+    <!-- PROFIT TRACKER -->
+    <section class="adm-section" id="sec-profit">
+      <div class="adm-topbar">
+        <h1 class="adm-page-title">Profit Tracker</h1>
+      </div>
+      <div class="adm-stats-grid" style="margin-bottom:2rem;">
+        <div class="adm-stat">
+          <div class="adm-stat-label">Gross Revenue</div>
+          <div class="adm-stat-value" id="pt-revenue">—</div>
+        </div>
+        <div class="adm-stat">
+          <div class="adm-stat-label">Product Cost (~40%)</div>
+          <div class="adm-stat-value" id="pt-cost">—</div>
+          <div class="adm-stat-change down">Estimated</div>
+        </div>
+        <div class="adm-stat">
+          <div class="adm-stat-label">Shipping Revenue</div>
+          <div class="adm-stat-value" id="pt-ship-rev">—</div>
+        </div>
+        <div class="adm-stat">
+          <div class="adm-stat-label">Net Profit</div>
+          <div class="adm-stat-value" id="pt-net" style="color:#4caf87;">—</div>
+        </div>
+      </div>
+      <div class="adm-grid2">
+        <div class="adm-card">
+          <div class="adm-card-title">Profit Breakdown</div>
+          <div id="profit-bars" style="margin-top:0.5rem;"></div>
+        </div>
+        <div class="adm-card">
+          <div class="adm-card-title">Profit by Region</div>
+          <canvas id="chart-profit-region"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ALERTS -->
+    <section class="adm-section" id="sec-alerts">
+      <div class="adm-topbar">
+        <h1 class="adm-page-title">Alerts</h1>
+      </div>
+      <div id="alerts-container"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="adm-section" id="sec-settings">
+      <div class="adm-topbar">
+        <h1 class="adm-page-title">Settings</h1>
+      </div>
+      <div class="adm-card" style="max-width:540px;">
+        <div class="adm-card-title">Platform Settings</div>
+
+        <div style="margin-bottom:1.5rem;">
+          <label class="adm-stat-label" style="font-size:0.62rem; display:block; margin-bottom:0.5rem;">Store Name</label>
+          <input type="text" value="Lwang Black" class="input-field" style="font-size:0.9rem;" />
+        </div>
+        <div style="margin-bottom:1.5rem;">
+          <label class="adm-stat-label" style="font-size:0.62rem; display:block; margin-bottom:0.5rem;">Contact Email</label>
+          <input type="email" value="brewed@lwangblack.com.au" class="input-field" style="font-size:0.9rem;" />
+        </div>
+        <div style="margin-bottom:1.5rem;">
+          <label class="adm-stat-label" style="font-size:0.62rem; display:block; margin-bottom:0.5rem;">Admin Password</label>
+          <input type="password" placeholder="New password" class="input-field" style="font-size:0.9rem;" id="new-pass" />
+        </div>
+        <div style="margin-bottom:2rem;">
+          <label class="adm-stat-label" style="font-size:0.62rem; display:block; margin-bottom:0.8rem;">DHL API Key (for production)</label>
+          <input type="text" placeholder="Enter DHL API key" class="input-field" style="font-size:0.9rem;" />
+          <p style="font-size:0.65rem; color:rgba(255,255,255,0.3); margin-top:0.5rem; font-family:'Inter',sans-serif;">Required for live shipping rate calculation and tracking</p>
+        </div>
+        <div style="margin-bottom:2rem;">
+          <label class="adm-stat-label" style="font-size:0.62rem; display:block; margin-bottom:0.8rem;">PayPal Client ID (for production)</label>
+          <input type="text" placeholder="Enter PayPal Client ID" class="input-field" style="font-size:0.9rem;" />
+          <p style="font-size:0.65rem; color:rgba(255,255,255,0.3); margin-top:0.5rem; font-family:'Inter',sans-serif;">Get from PayPal Developer Dashboard → Apps & Credentials</p>
+        </div>
+        <button class="btn-solid" onclick="saveSettings()">SAVE SETTINGS</button>
+        <p id="settings-saved" style="font-size:0.7rem; color:#4caf87; margin-top:1rem; display:none; font-family:'Inter',sans-serif;">✓ Settings saved</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="pricing.js"></script>
+  <script src="region.js"></script>
+  <script src="cart.js"></script>
+
+  <script>
+  // ── Auth ──────────────────────────────────────────
+  const ADMIN_PASS = localStorage.getItem('lb_admin_pass') || 'lwangblack-admin';
+
+  function adm_login() {
+    const val = document.getElementById('adm-pass').value;
+    if (val === ADMIN_PASS) {
+      document.getElementById('adm-login').style.display = 'none';
+      document.getElementById('adm-main-content').style.display = 'block';
+      initDashboard();
+    } else {
+      document.getElementById('adm-err').textContent = 'Incorrect password.';
+      setTimeout(() => document.getElementById('adm-err').textContent = '', 2000);
+    }
+  }
+
+  // ── Navigation ────────────────────────────────────
+  function showSection(id) {
+    document.querySelectorAll('.adm-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.adm-nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('sec-' + id).classList.add('active');
+    document.getElementById('nav-' + id).classList.add('active');
+
+    // Lazy-init charts
+    if (id === 'regions' && !window._regionsInit) { initRegionCharts(); window._regionsInit = true; }
+    if (id === 'profit' && !window._profitInit) { initProfitSection(); window._profitInit = true; }
+  }
+
+  // ── Demo Data Generator ────────────────────────────
+  function genDemoOrders() {
+    const real = JSON.parse(localStorage.getItem('lb_orders') || '[]');
+    if (real.length >= 5) return real;
+
+    const countries = ['NP','AU','US','GB','CA','NZ','NP','AU','US','NP'];
+    const statuses = ['delivered','delivered','shipped','paid','pending','shipped','delivered','paid','delivered','shipped'];
+    const products = [
+      [{name:'Lwang Black 500G',qty:2,price:2599,symbol:'Rs',currency:'NPR',image:'images/product-hero-500g.jpg'}],
+      [{name:'Lwang Black 250G',qty:1,price:18.99,symbol:'A$',currency:'AUD',image:'images/product-hero-250g.jpg'}],
+      [{name:'Pot & Press Gift Set',qty:1,price:59.99,symbol:'$',currency:'USD',image:'images/product-hero-giftset.jpg'}],
+      [{name:'Lwang Black 500G',qty:1,price:18.99,symbol:'£',currency:'GBP',image:'images/product-hero-500g.jpg'},{name:'Classic T-Shirt',qty:1,price:15.99,symbol:'£',currency:'GBP',image:'images/catalogue-4.jpg'}],
+      [{name:'Drip Coffee Bags',qty:2,price:16.99,symbol:'C$',currency:'CAD',image:'images/catalogue-1.jpg'}],
+      [{name:'Lwang Black 250G',qty:3,price:19.99,symbol:'NZ$',currency:'NZD',image:'images/product-hero-250g.jpg'}],
+      [{name:'2.0 Combo Set',qty:1,price:6099,symbol:'Rs',currency:'NPR',image:'images/catalogue-3.jpg'}],
+      [{name:'Lwang Black 500G',qty:1,price:32.99,symbol:'A$',currency:'AUD',image:'images/product-hero-500g.jpg'},{name:'French Press',qty:1,price:24.99,symbol:'A$',currency:'AUD',image:'images/catalogue-2.jpg'}],
+      [{name:'Classic T-Shirt',qty:2,price:19.99,symbol:'$',currency:'USD',image:'images/catalogue-4.jpg'}],
+      [{name:'Drip & Sip Set',qty:1,price:2599,symbol:'Rs',currency:'NPR',image:'images/catalogue-3.jpg'}]
+    ];
+    const carriers = ['Local Courier','DHL','DHL Express','DHL','DHL','DHL','Local Express','DHL Express','DHL','Local Courier'];
+    const names = [['Aarav','Shrestha','aarav@email.np'],['Emma','Wilson','emma@email.au'],['Jake','Miller','jake@email.us'],['Oliver','Smith','oliver@email.uk'],['Sophie','Brown','sophie@email.ca'],['Liam','Jones','liam@email.nz'],['Priya','Thapa','priya@email.np'],['Noah','Davis','noah@email.au'],['Isabella','Moore','isabella@email.us'],['Dev','Poudel','dev@email.np']];
+
+    const now = Date.now();
+    const demo = countries.map((cc, i) => {
+      const items = products[i];
+      const sym = items[0].symbol;
+      const subtotal = items.reduce((s, it) => s + it.price * it.qty, 0);
+      const shipping = cc === 'NP' ? 0 : parseFloat((Math.random() * 20 + 10).toFixed(2));
+      const n = names[i];
+      return {
+        id: 'LB-DEMO' + (i + 1).toString().padStart(3,'0'),
+        date: new Date(now - (i * 86400000 * 3)).toISOString(),
+        status: statuses[i],
+        country: cc,
+        currency: items[0].currency,
+        symbol: sym,
+        items,
+        subtotal,
+        shipping,
+        total: subtotal + shipping,
+        carrier: carriers[i],
+        customer: { fname: n[0], lname: n[1], email: n[2] }
+      };
+    });
+    return [...demo, ...real];
+  }
+
+  // ── Dashboard Init ────────────────────────────────
+  function initDashboard() {
+    const orders = genDemoOrders();
+    document.getElementById('adm-today').textContent = new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+    // Stats
+    const totalRevUSD = orders.reduce((s, o) => {
+      const rates = {NPR: 0.0075, AUD: 0.67, GBP: 1.27, CAD: 0.74, NZD: 0.61, SGD: 0.74, AED: 0.27, USD: 1};
+      return s + (o.total || 0) * (rates[o.currency] || 1);
+    }, 0);
+    const totalOrders = orders.length;
+    const regions = [...new Set(orders.map(o => o.country))];
+
+    document.getElementById('stat-revenue').textContent = `$${totalRevUSD.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+    document.getElementById('stat-revenue-chg').textContent = `↑ 24% vs last month`;
+    document.getElementById('stat-orders').textContent = totalOrders;
+    document.getElementById('stat-orders-chg').textContent = `↑ 18% vs last month`;
+    document.getElementById('stat-aov').textContent = `$${(totalRevUSD / totalOrders).toFixed(0)}`;
+    document.getElementById('stat-regions').textContent = regions.length;
+
+    // Revenue by day chart
+    const days = Array.from({length:14}, (_,i) => {
+      const d = new Date(); d.setDate(d.getDate() - (13 - i));
+      return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    });
+    const revData = days.map(() => Math.floor(Math.random() * 800 + 200));
+
+    new Chart(document.getElementById('chart-revenue'), {
+      type: 'line',
+      data: {
+        labels: days,
+        datasets: [{
+          data: revData,
+          borderColor: '#2e624c',
+          backgroundColor: 'rgba(46,98,76,0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+          pointBackgroundColor: '#2e624c',
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } } },
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 }, callback: v => '$' + v } } }
+      }
+    });
+
+    // Status pie
+    const statusCounts = { pending:0, paid:0, shipped:0, delivered:0 };
+    orders.forEach(o => { if (statusCounts[o.status] !== undefined) statusCounts[o.status]++; });
+    new Chart(document.getElementById('chart-status'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Pending','Paid','Shipped','Delivered'],
+        datasets: [{ data: Object.values(statusCounts),
+          backgroundColor: ['rgba(255,180,0,0.7)','rgba(100,160,255,0.7)','rgba(46,98,76,0.7)','rgba(76,175,135,0.7)'],
+          borderColor: 'transparent', borderWidth: 0 }]
+      },
+      options: { responsive: true, cutout: '65%',
+        plugins: { legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.5)', font: { size: 11 }, boxWidth: 12 } } }
+      }
+    });
+
+    // Best sellers
+    const salesMap = {};
+    orders.forEach(o => o.items?.forEach(it => {
+      salesMap[it.name] = (salesMap[it.name] || 0) + (it.qty || 1);
+    }));
+    const sorted = Object.entries(salesMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    const maxSales = sorted[0]?.[1] || 1;
+    document.getElementById('best-sellers-list').innerHTML = sorted.map(([name, qty]) => `
+      <div class="adm-profit-bar-wrap">
+        <div class="adm-profit-bar-label"><span>${name}</span><span>${qty} sold</span></div>
+        <div class="adm-profit-bar-bg"><div class="adm-profit-bar" style="width:${(qty/maxSales)*100}%;background:#2e624c;"></div></div>
+      </div>`).join('');
+
+    // Render tables
+    renderOrdersTable();
+    renderProductsTable();
+    renderAlertsSection(orders);
+  }
+
+  // ── Region Charts ─────────────────────────────────
+  function initRegionCharts() {
+    const orders = genDemoOrders();
+    const rates = {NPR: 0.0075, AUD: 0.67, GBP: 1.27, CAD: 0.74, NZD: 0.61, SGD: 0.74, AED: 0.27, USD: 1};
+    const countryNames = window.COUNTRY_NAMES || {};
+
+    const byCountry = {};
+    orders.forEach(o => {
+      if (!byCountry[o.country]) byCountry[o.country] = { orders: 0, rev: 0 };
+      byCountry[o.country].orders++;
+      byCountry[o.country].rev += (o.total || 0) * (rates[o.currency] || 1);
+    });
+    const countries = Object.keys(byCountry);
+    const labels = countries.map(c => countryNames[c]?.split(' ')[0] || c);
+    const colors = ['rgba(46,98,76,0.8)','rgba(100,160,255,0.8)','rgba(255,180,0,0.8)','rgba(255,100,100,0.8)','rgba(180,100,255,0.8)','rgba(76,175,135,0.8)'];
+
+    new Chart(document.getElementById('chart-revenue-country'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: countries.map(c => byCountry[c].rev.toFixed(0)),
+        backgroundColor: colors, borderRadius: 6 }] },
+      options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { x: { grid: {color:'rgba(255,255,255,0.05)'}, ticks:{color:'rgba(255,255,255,0.5)',font:{size:11}} },
+          y: { grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'rgba(255,255,255,0.5)',font:{size:11},callback:v=>'$'+v} } }
+      }
+    });
+
+    new Chart(document.getElementById('chart-orders-country'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: countries.map(c => byCountry[c].orders),
+        backgroundColor: colors, borderRadius: 6 }] },
+      options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { x: { grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'rgba(255,255,255,0.5)',font:{size:11}} },
+          y: { grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'rgba(255,255,255,0.5)',font:{size:11},stepSize:1} } }
+      }
+    });
+
+    // Region table
+    const topProducts = {'NP':'Lwang Black 500G','AU':'French Press Bundle','US':'Pot & Press Gift Set','GB':'Lwang Black 500G','CA':'Drip Coffee Bags','NZ':'Lwang Black 250G'};
+    document.getElementById('region-table-body').innerHTML = countries.map(c => {
+      const d = byCountry[c];
+      const avg = (d.rev / d.orders).toFixed(0);
+      return `<tr>
+        <td>${countryNames[c] || c}</td>
+        <td>${d.orders}</td>
+        <td>$${d.rev.toFixed(0)}</td>
+        <td>$${avg}</td>
+        <td style="color:rgba(255,255,255,0.6); font-size:0.75rem;">${topProducts[c] || 'Lwang Black 250G'}</td>
+        <td><span class="adm-status delivered">Active</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Profit Section ────────────────────────────────
+  function initProfitSection() {
+    const orders = genDemoOrders();
+    const rates = {NPR: 0.0075, AUD: 0.67, GBP: 1.27, CAD: 0.74, NZD: 0.61, SGD: 0.74, AED: 0.27, USD: 1};
+    const countryNames = window.COUNTRY_NAMES || {};
+
+    const totalRev = orders.reduce((s, o) => s + (o.total || 0) * (rates[o.currency] || 1), 0);
+    const totalShipRev = orders.reduce((s, o) => s + (o.shipping || 0) * (rates[o.currency] || 1), 0);
+    const productRev = totalRev - totalShipRev;
+    const productCost = productRev * 0.40;
+    const netProfit = totalRev - productCost;
+
+    document.getElementById('pt-revenue').textContent = `$${totalRev.toFixed(0)}`;
+    document.getElementById('pt-cost').textContent = `$${productCost.toFixed(0)}`;
+    document.getElementById('pt-ship-rev').textContent = `$${totalShipRev.toFixed(0)}`;
+    document.getElementById('pt-net').textContent = `$${netProfit.toFixed(0)}`;
+
+    const bars = [
+      { label: 'Gross Revenue', value: totalRev, max: totalRev, color: '#2e624c' },
+      { label: 'Product Cost', value: productCost, max: totalRev, color: '#ff6464' },
+      { label: 'Shipping Revenue', value: totalShipRev, max: totalRev, color: '#64a0ff' },
+      { label: 'Net Profit', value: netProfit, max: totalRev, color: '#4caf87' },
+    ];
+    document.getElementById('profit-bars').innerHTML = bars.map(b => `
+      <div class="adm-profit-bar-wrap">
+        <div class="adm-profit-bar-label"><span>${b.label}</span><span>$${b.value.toFixed(0)}</span></div>
+        <div class="adm-profit-bar-bg"><div class="adm-profit-bar" style="width:${(b.value/b.max)*100}%; background:${b.color};"></div></div>
+      </div>`).join('');
+
+    // Profit by region chart
+    const byCountry = {};
+    orders.forEach(o => {
+      const rev = (o.total || 0) * (rates[o.currency] || 1);
+      byCountry[o.country] = (byCountry[o.country] || 0) + rev * 0.6;
+    });
+    const countries = Object.keys(byCountry);
+    new Chart(document.getElementById('chart-profit-region'), {
+      type: 'doughnut',
+      data: {
+        labels: countries.map(c => countryNames[c]?.split(' ')[0] || c),
+        datasets: [{ data: countries.map(c => byCountry[c].toFixed(0)),
+          backgroundColor: ['rgba(46,98,76,0.8)','rgba(100,160,255,0.8)','rgba(255,180,0,0.8)','rgba(180,100,255,0.8)','rgba(76,175,135,0.8)','rgba(255,120,100,0.8)'],
+          borderColor: 'transparent' }]
+      },
+      options: { responsive: true, cutout: '60%',
+        plugins: { legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.5)', font:{size:11}, boxWidth:12 } } }
+      }
+    });
+  }
+
+  // ── Orders Table ──────────────────────────────────
+  function renderOrdersTable() {
+    const orders = genDemoOrders();
+    const statusFilter = document.getElementById('order-filter-status')?.value || 'all';
+    const regionFilter = document.getElementById('order-filter-region')?.value || 'all';
+    const countryNames = window.COUNTRY_NAMES || {};
+
+    let filtered = orders;
+    if (statusFilter !== 'all') filtered = filtered.filter(o => o.status === statusFilter);
+    if (regionFilter !== 'all') filtered = filtered.filter(o => o.country === regionFilter);
+
+    const tbody = document.getElementById('orders-table-body');
+    const empty = document.getElementById('orders-empty');
+    if (!filtered.length) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    tbody.innerHTML = filtered.map(o => `
+      <tr>
+        <td style="font-family:'Inter',sans-serif; font-size:0.7rem; letter-spacing:1px; color:#2e624c;">${o.id}</td>
+        <td>${(o.customer?.fname || '—')} ${(o.customer?.lname || '')}</td>
+        <td>${countryNames[o.country]?.split(' ')[0] || o.country} ${countryNames[o.country]?.split(' ')[1] || ''}</td>
+        <td>${(o.items?.length || 0)} item(s)</td>
+        <td>${o.symbol}${(o.total || 0).toLocaleString(undefined, {minimumFractionDigits: o.total < 100 ? 2 : 0})}</td>
+        <td style="font-size:0.72rem; color:rgba(255,255,255,0.5);">${o.carrier || 'TBD'}</td>
+        <td style="font-size:0.7rem; color:rgba(255,255,255,0.4);">${new Date(o.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</td>
+        <td><span class="adm-status ${o.status}">${o.status}</span></td>
+        <td>
+          <select onchange="updateOrderStatus('${o.id}', this.value)" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:0.3rem 0.5rem; border-radius:6px; font-size:0.65rem; cursor:pointer; outline:none;">
+            <option value="pending" ${o.status==='pending'?'selected':''}>Pending</option>
+            <option value="paid" ${o.status==='paid'?'selected':''}>Paid</option>
+            <option value="shipped" ${o.status==='shipped'?'selected':''}>Shipped</option>
+            <option value="delivered" ${o.status==='delivered'?'selected':''}>Delivered</option>
+          </select>
+        </td>
+      </tr>`).join('');
+  }
+
+  function updateOrderStatus(orderId, newStatus) {
+    const orders = JSON.parse(localStorage.getItem('lb_orders') || '[]');
+    const order = orders.find(o => o.id === orderId);
+    if (order) { order.status = newStatus; localStorage.setItem('lb_orders', JSON.stringify(orders)); }
+    renderOrdersTable();
+  }
+
+  // ── Products Table ────────────────────────────────
+  function renderProductsTable() {
+    const products = window.LB_PRODUCTS || {};
+    document.getElementById('products-table-body').innerHTML = Object.values(products).map(p => {
+      const np = p.prices?.NP?.display || '—';
+      const au = p.prices?.AU?.display || '—';
+      const us = p.prices?.US?.display || '—';
+      const regions = p.allowed_regions === 'ALL' ? 'Global 🌍' : p.allowed_regions?.join(', ') || '—';
+      const stockClass = p.stock < 15 ? 'color:#ff6464;' : 'color:#4caf87;';
+      return `<tr>
+        <td style="font-family:'EB Garamond',serif; font-size:1rem;">${p.name}</td>
+        <td><span class="adm-status paid">${p.category}</span></td>
+        <td style="font-size:0.72rem; color:rgba(255,255,255,0.5);">${regions}</td>
+        <td>${np}</td>
+        <td>${au}</td>
+        <td>${us}</td>
+        <td style="${stockClass}">${p.stock}</td>
+        <td><span class="adm-status ${p.stock > 0 ? 'delivered' : 'pending'}">${p.stock > 0 ? 'In Stock' : 'Out of Stock'}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Alerts ────────────────────────────────────────
+  function renderAlertsSection(orders) {
+    const products = window.LB_PRODUCTS || {};
+    const alerts = [];
+
+    // Low stock alerts
+    Object.values(products).forEach(p => {
+      if (p.stock <= 10) {
+        alerts.push({ type: p.stock <= 5 ? 'critical' : 'warning', icon: '📦', title: `Low Stock: ${p.name}`, body: `Only ${p.stock} units remaining. Consider restocking soon.` });
+      }
+    });
+
+    // Recent pending orders
+    const pendingOrders = orders.filter(o => o.status === 'pending');
+    if (pendingOrders.length > 2) {
+      alerts.push({ type: 'warning', icon: '⏳', title: `${pendingOrders.length} Pending Orders`, body: 'Multiple orders awaiting processing. Review and update status.' });
+    }
+
+    // Mock alerts
+    alerts.push({ type: 'info', icon: '📈', title: 'Sales Uptick — Australia', body: 'AU orders increased 32% this week. Consider targeted promotions.' });
+    alerts.push({ type: 'info', icon: '🚀', title: 'New Region Ready', body: 'Shipping rates now configured for Singapore. Products available.' });
+
+    const container = document.getElementById('alerts-container');
+    if (!alerts.length) {
+      container.innerHTML = '<div class="adm-card" style="text-align:center; padding:3rem; color:rgba(255,255,255,0.3); font-family:\'Inter\',sans-serif;">No active alerts. Everything looks good! ✓</div>';
+      return;
+    }
+    container.innerHTML = alerts.map(a => `
+      <div class="adm-alert-card ${a.type === 'critical' ? 'critical' : ''}">
+        <div class="adm-alert-icon">${a.icon}</div>
+        <div class="adm-alert-text">
+          <h4>${a.title}</h4>
+          <p>${a.body}</p>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── Settings ──────────────────────────────────────
+  function saveSettings() {
+    const newPass = document.getElementById('new-pass')?.value;
+    if (newPass) localStorage.setItem('lb_admin_pass', newPass);
+    const saved = document.getElementById('settings-saved');
+    saved.style.display = 'block';
+    setTimeout(() => saved.style.display = 'none', 3000);
+  }
+
+  // ── Hide region banner & preloader ────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    const banner = document.getElementById('lb-region-banner');
+    if (banner) banner.style.display = 'none';
+  });
+  </script>
+</body>
+</html>

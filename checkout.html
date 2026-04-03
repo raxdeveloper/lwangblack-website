@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout – Lwang Black | Secure Global Checkout</title>
+  <meta name="description" content="Complete your Lwang Black order. Secure checkout with DHL global shipping and PayPal payment." />
+  <meta name="robots" content="noindex" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="region-style.css?v=3" />
+  <link rel="stylesheet" href="ecommerce.css" />
+</head>
+<body>
+
+  <!-- PRELOADER -->
+  <div id="preloader">
+    <div class="spinner"></div>
+    <img src="images/logo-hero.png" alt="Lwang Black" style="height:60px;object-fit:contain;" onerror="this.style.display='none'" />
+  </div>
+
+  <!-- NAVIGATION -->
+    <nav class="site-nav" id="siteNav">
+    <!-- Left links -->
+    <div class="nav-links nav-left">
+      <a href="index.html" id="nav-home">HOME</a>
+      <a href="shop.html" id="nav-shop">SHOP</a>
+      <a href="reviews.html" id="nav-reviews">REVIEWS</a>
+    </div>
+
+    <!-- Center: logo + flag bar below it -->
+    <div class="nav-center">
+      <a href="index.html" class="nav-brand" id="navBrand">
+        <img src="images/logo-hero.png" alt="Lwang Black Logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
+        <span style="display:none; font-family:var(--font-heading); font-size:1.5rem; color:#fff;">LWANG BLACK</span>
+      </a>
+      <!-- Flag bar injected here by region.js -->
+    </div>
+
+    <!-- Right links + region switcher -->
+    <div class="nav-links nav-right">
+      <a href="health-benefits.html" id="nav-benefits">BENEFITS</a>
+      <a href="contact.html" id="nav-contact">CONTACT</a>
+      <!-- Region Switcher injected here by region.js -->
+      <a href="shop.html" class="btn-solid" style="padding:0.5rem 1.5rem;" id="nav-cta">SHOP NOW</a>
+    </div>
+  </nav>
+
+  <!-- CHECKOUT PAGE -->
+  <main class="fullscreen-section co-page" style="padding-top:9rem; align-items:flex-start; min-height:unset;">
+
+    <!-- Region Block (shown if not supported) -->
+    <div id="co-region-block" class="co-region-block" style="display:none; max-width:600px; margin:0 auto;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,100,100,0.6)" stroke-width="1.5" style="margin-bottom:1rem;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+      <h3>Checkout Not Available</h3>
+      <p>We currently don't ship to your region. Change your country below or contact us to arrange a custom order.</p>
+      <select id="co-country-fix" class="co-select" style="max-width:300px; margin:0 auto 1.5rem; display:block;">
+        <option value="">— Select your country —</option>
+      </select>
+      <a href="shop.html" class="btn-solid" style="background:transparent; border:1px solid rgba(255,255,255,0.2);">BACK TO SHOP</a>
+    </div>
+
+    <div id="co-main" class="co-grid" style="width:100%; max-width:1100px; margin:0 auto;">
+      <!-- LEFT: Form -->
+      <div>
+        <!-- Steps -->
+        <div class="co-steps">
+          <div class="co-step active" data-step="1">01 · Contact</div>
+          <div class="co-step" data-step="2">02 · Shipping</div>
+          <div class="co-step" data-step="3">03 · Delivery</div>
+          <div class="co-step" data-step="4">04 · Payment</div>
+        </div>
+
+        <!-- STEP 1: Contact -->
+        <div class="co-section active" id="co-s1">
+          <h2 class="title-large" style="font-size:clamp(2rem,5vw,3.5rem); margin-bottom:2.5rem;">Contact Info</h2>
+          <div class="co-row">
+            <div>
+              <label class="co-label">First Name</label>
+              <input type="text" class="co-input" id="co-fname" placeholder="Aarav" required />
+            </div>
+            <div>
+              <label class="co-label">Last Name</label>
+              <input type="text" class="co-input" id="co-lname" placeholder="Shrestha" required />
+            </div>
+          </div>
+          <label class="co-label">Email Address</label>
+          <input type="email" class="co-input" id="co-email" placeholder="you@email.com" required />
+          <label class="co-label">Phone Number</label>
+          <input type="tel" class="co-input" id="co-phone" placeholder="+977 9800000000" />
+          <button class="co-btn-next" onclick="goStep(2)">CONTINUE TO SHIPPING →</button>
+        </div>
+
+        <!-- STEP 2: Shipping Address -->
+        <div class="co-section" id="co-s2">
+          <h2 class="title-large" style="font-size:clamp(2rem,5vw,3.5rem); margin-bottom:2.5rem;">Shipping Address</h2>
+          <label class="co-label">Country</label>
+          <select class="co-select" id="co-country"></select>
+          <label class="co-label">Street Address</label>
+          <input type="text" class="co-input" id="co-street" placeholder="123 Main Street" required />
+          <label class="co-label">Apartment / Suite (optional)</label>
+          <input type="text" class="co-input" id="co-apt" placeholder="Apt 4B" />
+          <div class="co-row">
+            <div>
+              <label class="co-label">City</label>
+              <input type="text" class="co-input" id="co-city" placeholder="Kathmandu" required />
+            </div>
+            <div>
+              <label class="co-label">Postal Code</label>
+              <input type="text" class="co-input" id="co-postal" placeholder="44600" />
+            </div>
+          </div>
+          <div>
+            <button class="co-btn-back" onclick="goStep(1)">← Back</button>
+            <button class="co-btn-next" onclick="goStep(3)">CONTINUE →</button>
+          </div>
+        </div>
+
+        <!-- STEP 3: Delivery Method -->
+        <div class="co-section" id="co-s3">
+          <h2 class="title-large" style="font-size:clamp(2rem,5vw,3.5rem); margin-bottom:2.5rem;">Delivery Method</h2>
+          <div id="co-shipping-options"></div>
+          <div style="margin-top:2rem;">
+            <button class="co-btn-back" onclick="goStep(2)">← Back</button>
+            <button class="co-btn-next" onclick="goStep(4)">CONTINUE TO PAYMENT →</button>
+          </div>
+        </div>
+
+        <!-- STEP 4: Payment -->
+        <div class="co-section" id="co-s4">
+          <h2 class="title-large" style="font-size:clamp(2rem,5vw,3.5rem); margin-bottom:2.5rem;">Payment</h2>
+
+          <div class="co-payment-methods">
+            <button class="co-pay-btn active" id="pay-paypal" onclick="selectPayment('paypal')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#009CDE"><path d="M7.02 21.907L8.64 12h3.85c2.89 0 4.92-1.35 5.49-4.07.06-.29.1-.57.12-.84C19.12 4.7 17.5 3 14.82 3H8.56a.75.75 0 0 0-.74.63L5.28 20.02A.5.5 0 0 0 5.78 20.6h1.15l.09-.693z"/></svg>
+              PayPal
+            </button>
+            <button class="co-pay-btn" id="pay-card" onclick="selectPayment('card')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              Credit Card
+            </button>
+          </div>
+
+          <!-- PayPal Section -->
+          <div id="pay-paypal-section">
+            <p style="font-family:'Inter',sans-serif; font-size:0.8rem; color:rgba(255,255,255,0.5); margin-bottom:1.5rem; line-height:1.7;">
+              You'll be securely redirected to PayPal to complete your purchase. PayPal accepts all major cards and bank accounts worldwide.
+            </p>
+            <div style="background:rgba(0,112,186,0.08); border:1px solid rgba(0,112,186,0.25); border-radius:10px; padding:1.5rem; margin-bottom:1.5rem;">
+              <div style="display:flex; gap:0.8rem; align-items:center;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="#009CDE"><path d="M7.02 21.907L8.64 12h3.85c2.89 0 4.92-1.35 5.49-4.07.06-.29.1-.57.12-.84C19.12 4.7 17.5 3 14.82 3H8.56a.75.75 0 0 0-.74.63L5.28 20.02A.5.5 0 0 0 5.78 20.6h1.15l.09-.693z"/></svg>
+                <div>
+                  <div style="font-family:'Inter',sans-serif; font-size:0.8rem; font-weight:600;">Secure PayPal Checkout</div>
+                  <div style="font-family:'Inter',sans-serif; font-size:0.65rem; color:rgba(255,255,255,0.4);">Buyer Protection · No account required</div>
+                </div>
+              </div>
+            </div>
+            <button class="co-btn-back" onclick="goStep(3)" style="margin-bottom:1rem;">← Back</button>
+            <button class="co-paypal-btn" onclick="placeOrderPayPal()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M7.02 21.907L8.64 12h3.85c2.89 0 4.92-1.35 5.49-4.07.06-.29.1-.57.12-.84C19.12 4.7 17.5 3 14.82 3H8.56a.75.75 0 0 0-.74.63L5.28 20.02A.5.5 0 0 0 5.78 20.6h1.15l.09-.693z"/></svg>
+              CHECKOUT WITH PAYPAL
+            </button>
+          </div>
+
+          <!-- Card Section (mock UI) -->
+          <div id="pay-card-section" style="display:none;">
+            <label class="co-label">Card Number</label>
+            <input type="text" class="co-input" placeholder="4242 4242 4242 4242" maxlength="19" oninput="formatCard(this)" />
+            <div class="co-row">
+              <div>
+                <label class="co-label">Expiry</label>
+                <input type="text" class="co-input" placeholder="MM / YY" maxlength="7" />
+              </div>
+              <div>
+                <label class="co-label">CVC</label>
+                <input type="text" class="co-input" placeholder="123" maxlength="4" />
+              </div>
+            </div>
+            <label class="co-label">Name on Card</label>
+            <input type="text" class="co-input" placeholder="AARAV SHRESTHA" />
+            <button class="co-btn-back" onclick="goStep(3)" style="margin-bottom:1rem;">← Back</button>
+            <button class="co-btn-next" onclick="placeOrderCard()">PLACE ORDER →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Order Summary -->
+      <div class="co-summary" id="co-order-summary">
+        <div class="co-summary-title">ORDER SUMMARY</div>
+        <div id="co-summary-items"><!-- rendered by JS --></div>
+        <div class="co-summary-divider"></div>
+        <div class="co-summary-line"><span>Subtotal</span><span id="co-sum-sub">—</span></div>
+        <div class="co-summary-line"><span>Shipping</span><span id="co-sum-ship">—</span></div>
+        <div class="co-summary-divider"></div>
+        <div class="co-summary-total"><span>Total</span><span id="co-sum-total">—</span></div>
+        <div class="co-summary-badges">
+          <span class="co-badge">🔒 Secure SSL</span>
+          <span class="co-badge">📦 DHL Delivery</span>
+          <span class="co-badge">✓ Buyer Protected</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div id="cartToast">Added</div>
+
+  <script src="pricing.js"></script>
+  <script src="region.js"></script>
+  <script src="cart.js"></script>
+
+  <script>
+    // ── State ──────────────────────────────────────
+    let currentStep = 1;
+    let selectedShipping = 'standard';
+    let selectedPayment = 'paypal';
+    let cartItems = [];
+    let cartTotals = {};
+    let shippingRates = {};
+
+    // ── Init ──────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Hide region banner on checkout
+      const banner = document.getElementById('lb-region-banner');
+      if (banner) banner.style.display = 'none';
+
+      // Hide preloader
+      setTimeout(() => {
+        const pl = document.getElementById('preloader');
+        if (pl) { pl.style.opacity = '0'; setTimeout(() => pl.remove(), 400); }
+      }, 600);
+
+      await LB_REGION.init();
+      const country = LB_REGION.get();
+      checkRegion(country);
+      buildCountrySelects();
+      renderOrderSummary();
+    });
+
+    document.addEventListener('lb:regionChanged', (e) => {
+      checkRegion(e.detail.country);
+      renderShippingOptions(e.detail.country);
+      renderOrderSummary();
+    });
+
+    // ── Region Check ──────────────────────────────
+    function checkRegion(code) {
+      const supported = ['NP', 'AU', 'US', 'GB', 'CA', 'DE', 'FR', 'NZ', 'SG', 'AE'];
+      const block = document.getElementById('co-region-block');
+      const main  = document.getElementById('co-main');
+      if (!supported.includes(code)) {
+        block.style.display = 'block';
+        main.style.display  = 'none';
+      } else {
+        block.style.display = 'none';
+        main.style.display  = 'grid';
+      }
+    }
+
+    // ── Country Select ────────────────────────────
+    function buildCountrySelects() {
+      const names = window.COUNTRY_NAMES || {};
+      const coSelect = document.getElementById('co-country');
+      const coFix = document.getElementById('co-country-fix');
+      const current = LB_REGION.get();
+
+      Object.entries(names).forEach(([code, name]) => {
+        const opt1 = new Option(name, code);
+        if (code === current) opt1.selected = true;
+        coSelect?.appendChild(opt1);
+
+        const opt2 = new Option(name, code);
+        coFix?.appendChild(opt2);
+      });
+
+      coSelect?.addEventListener('change', () => LB_REGION.set(coSelect.value));
+      coFix?.addEventListener('change', () => {
+        if (coFix.value) { LB_REGION.set(coFix.value); checkRegion(coFix.value); }
+      });
+    }
+
+    // ── Step Navigation ───────────────────────────
+    function goStep(n) {
+      if (n > currentStep) {
+        // Validate current step
+        if (currentStep === 1 && !validateStep1()) return;
+      }
+      currentStep = n;
+      document.querySelectorAll('.co-section').forEach((s, i) => {
+        s.classList.toggle('active', i + 1 === n);
+      });
+      document.querySelectorAll('.co-step').forEach((s, i) => {
+        s.classList.remove('active', 'done');
+        if (i + 1 < n) s.classList.add('done');
+        if (i + 1 === n) s.classList.add('active');
+      });
+      if (n === 3) renderShippingOptions(LB_REGION.get());
+    }
+
+    function validateStep1() {
+      const fname = document.getElementById('co-fname').value.trim();
+      const email = document.getElementById('co-email').value.trim();
+      if (!fname || !email) {
+        alert('Please fill in your name and email address.');
+        return false;
+      }
+      return true;
+    }
+
+    // ── Shipping Options ──────────────────────────
+    function renderShippingOptions(countryCode) {
+      const rates = window.getShippingRates(countryCode);
+      shippingRates = rates;
+      const container = document.getElementById('co-shipping-options');
+      if (!container) return;
+
+      container.innerHTML = ['standard', 'express'].map(type => {
+        const r = rates[type];
+        const priceStr = r.price === 0
+          ? '<span style="color:#2e624c">FREE</span>'
+          : `<span>${cartTotals.symbol || '$'}${r.price.toFixed(2)}</span>`;
+        return `
+          <div class="co-shipping-option ${type === selectedShipping ? 'selected' : ''}"
+               onclick="selectShipping('${type}')">
+            <div class="co-shipping-left">
+              <div class="co-shipping-radio"></div>
+              <div>
+                <div class="co-shipping-label">${r.label}</div>
+                <div class="co-shipping-carrier">${r.carrier}</div>
+              </div>
+            </div>
+            <div class="co-shipping-price">${priceStr}</div>
+          </div>`;
+      }).join('');
+      updateSummaryShipping();
+    }
+
+    function selectShipping(type) {
+      selectedShipping = type;
+      document.querySelectorAll('.co-shipping-option').forEach((el, i) => {
+        el.classList.toggle('selected', ['standard', 'express'][i] === type);
+      });
+      updateSummaryShipping();
+    }
+
+    // ── Order Summary ─────────────────────────────
+    function renderOrderSummary() {
+      cartItems = LB_CART.load();
+      cartTotals = LB_CART.getTotals();
+
+      const itemsEl = document.getElementById('co-summary-items');
+      if (!itemsEl) return;
+
+      if (!cartItems.length) {
+        itemsEl.innerHTML = `<p style="font-family:'Inter',sans-serif; font-size:0.75rem; color:rgba(255,255,255,0.4); text-align:center; padding:1rem 0;">Cart is empty — <a href="shop.html" style="color:#fff;">add products</a></p>`;
+      } else {
+        itemsEl.innerHTML = cartItems.map(item => `
+          <div class="co-summary-item">
+            <img src="${item.image}" alt="${item.name}" onerror="this.src='images/product-hero-500g.jpg'"/>
+            <div class="co-summary-item-name">${item.name}
+              <div class="co-summary-item-qty">Qty: ${item.qty}</div>
+            </div>
+            <div class="co-summary-item-price">${item.symbol}${(item.price * item.qty).toLocaleString(undefined, {minimumFractionDigits: item.price < 100 ? 2 : 0, maximumFractionDigits: item.price < 100 ? 2 : 0})}</div>
+          </div>`).join('');
+      }
+      document.getElementById('co-sum-sub').textContent = cartTotals.display;
+      updateSummaryShipping();
+    }
+
+    function updateSummaryShipping() {
+      const rates = shippingRates?.standard ? shippingRates : (window.getShippingRates?.(LB_REGION.get()) || {});
+      const rate = rates[selectedShipping] || rates.standard;
+      if (!rate) return;
+
+      const shipEl = document.getElementById('co-sum-ship');
+      const totalEl = document.getElementById('co-sum-total');
+      const subtotal = cartTotals.subtotal || 0;
+      const sym = cartTotals.symbol || '$';
+
+      shipEl.textContent = rate.price === 0 ? 'FREE' : `${sym}${rate.price.toFixed(2)}`;
+      const total = subtotal + rate.price;
+      totalEl.textContent = `${sym}${total.toLocaleString(undefined, {minimumFractionDigits: total < 100 ? 2 : 0, maximumFractionDigits: total < 100 ? 2 : 0})}`;
+    }
+
+    // ── Payment ───────────────────────────────────
+    function selectPayment(type) {
+      selectedPayment = type;
+      document.getElementById('pay-paypal').classList.toggle('active', type === 'paypal');
+      document.getElementById('pay-card').classList.toggle('active', type === 'card');
+      document.getElementById('pay-paypal-section').style.display = type === 'paypal' ? 'block' : 'none';
+      document.getElementById('pay-card-section').style.display = type === 'card' ? 'block' : 'none';
+    }
+
+    function placeOrderPayPal() {
+      if (!cartItems.length) { alert('Your cart is empty!'); return; }
+      // Save order to localStorage before redirecting
+      const order = buildOrder('PayPal');
+      saveOrder(order);
+      // In production: redirect to PayPal checkout URL with order details
+      // For now, simulate redirect to confirmation
+      window.location.href = `order-confirmation.html?id=${order.id}&method=paypal`;
+    }
+
+    function placeOrderCard() {
+      if (!cartItems.length) { alert('Your cart is empty!'); return; }
+      const order = buildOrder('Card');
+      saveOrder(order);
+      window.location.href = `order-confirmation.html?id=${order.id}&method=card`;
+    }
+
+    function buildOrder(method) {
+      const rates = window.getShippingRates?.(LB_REGION.get()) || {};
+      const rate = rates[selectedShipping] || { price: 0, carrier: 'Local', label: 'Standard' };
+      const subtotal = cartTotals.subtotal || 0;
+      return {
+        id: 'LB-' + Date.now().toString(36).toUpperCase(),
+        date: new Date().toISOString(),
+        status: 'pending',
+        country: LB_REGION.get(),
+        currency: cartTotals.currency,
+        symbol: cartTotals.symbol,
+        items: cartItems,
+        subtotal,
+        shipping: rate.price,
+        total: subtotal + rate.price,
+        carrier: rate.carrier,
+        shippingLabel: rate.label,
+        paymentMethod: method,
+        customer: {
+          fname: document.getElementById('co-fname')?.value || '',
+          lname: document.getElementById('co-lname')?.value || '',
+          email: document.getElementById('co-email')?.value || '',
+          phone: document.getElementById('co-phone')?.value || '',
+          street: document.getElementById('co-street')?.value || '',
+          city:   document.getElementById('co-city')?.value || '',
+          postal: document.getElementById('co-postal')?.value || '',
+        }
+      };
+    }
+
+    function saveOrder(order) {
+      const orders = JSON.parse(localStorage.getItem('lb_orders') || '[]');
+      orders.unshift(order);
+      localStorage.setItem('lb_orders', JSON.stringify(orders));
+      LB_CART.clear();
+    }
+
+    function formatCard(input) {
+      let v = input.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+      let matches = v.match(/\d{4,16}/g);
+      let match = matches && matches[0] || '';
+      let parts = [];
+      for (let i = 0, len = match.length; i < len; i += 4) {
+        parts.push(match.substring(i, i + 4));
+      }
+      input.value = parts.length ? parts.join(' ') : v;
+    }
+  </script>
+</body>
+</html>

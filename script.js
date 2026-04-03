@@ -176,5 +176,45 @@ document.addEventListener("DOMContentLoaded", () => {
                 }, 3000);
             });
         }
+
+        // --- PROMO POPUP ---
+        const promoPopup = document.getElementById('promoPopup');
+        const promoCloseBtn = document.getElementById('promoCloseBtn');
+        const promoDeclineBtn = document.getElementById('promoDeclineBtn');
+        const promoForm = document.getElementById('promoForm');
+
+        if (promoPopup && !sessionStorage.getItem('lwangblack_promo_shown')) {
+            // Show popup 2 seconds after GSAP initialized
+            setTimeout(() => {
+                promoPopup.classList.add('active');
+            }, 2500);
+
+            const closePromo = () => {
+                promoPopup.classList.remove('active');
+                sessionStorage.setItem('lwangblack_promo_shown', 'true');
+            };
+
+            if (promoCloseBtn) promoCloseBtn.addEventListener('click', closePromo);
+            if (promoDeclineBtn) promoDeclineBtn.addEventListener('click', closePromo);
+            
+            // Close on clicking outside the modal content
+            promoPopup.addEventListener('click', (e) => {
+                if (e.target === promoPopup) closePromo();
+            });
+
+            if (promoForm) {
+                promoForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const btn = promoForm.querySelector('button[type="submit"]');
+                    const origText = btn.innerText;
+                    btn.innerText = "OFFER CLAIMED!";
+                    btn.style.background = "var(--accent)";
+                    btn.style.color = "#fff";
+                    setTimeout(() => {
+                        closePromo();
+                    }, 1500);
+                });
+            }
+        }
     }
 });

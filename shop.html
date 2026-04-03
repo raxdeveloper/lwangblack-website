@@ -34,10 +34,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="region-style.css?v=3" />
+  <link rel="stylesheet" href="ecommerce.css?v=3" />
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="pricing.js"></script>
+  <script src="region.js"></script>
+  <script src="cart.js"></script>
 
   <style>
     .filters-container {
@@ -89,9 +94,7 @@
       display: flex;
       align-items: center;
       gap: 0.6rem;
-      border: 1px solid var(--border-color);
-      border-radius: 50px;
-      padding: 0.6rem 1.5rem;
+      padding: 0.6rem;
       font-family: var(--font-micro);
       font-size: 0.6rem;
       letter-spacing: 2px;
@@ -109,29 +112,39 @@
   </div>
 
   <!-- NAVIGATION -->
-  <nav class="site-nav">
-      <div class="nav-links">
-          <a href="index.html">HOME</a>
-          <a href="shop.html" style="color: var(--accent);">SHOP</a>
-          <a href="reviews.html">REVIEWS</a>
-      </div>
-      <a href="index.html" class="nav-brand">
-          <img src="images/logo-hero.png" alt="Lwang Black Logo" onerror="this.style.display='none';" />
+  <nav class="site-nav" id="siteNav">
+    <!-- Left links -->
+    <div class="nav-links nav-left">
+      <a href="index.html" id="nav-home">HOME</a>
+      <a href="shop.html" id="nav-shop" style="color: var(--accent);">SHOP</a>
+      <a href="reviews.html" id="nav-reviews">REVIEWS</a>
+    </div>
+
+    <!-- Center: logo + flag bar below it -->
+    <div class="nav-center">
+      <a href="index.html" class="nav-brand" id="navBrand">
+        <img src="images/logo-hero.png" alt="Lwang Black Logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
+        <span style="display:none; font-family:var(--font-heading); font-size:1.5rem; color:#fff;">LWANG BLACK</span>
       </a>
-      <div class="nav-links">
-          <a href="health-benefits.html">BENEFITS</a>
-          <a href="contact.html">CONTACT</a>
-          <a href="shop.html" class="btn-solid" style="padding: 0.5rem 1.5rem;">SHOP NOW</a>
-      </div>
+      <!-- Flag bar injected here by region.js -->
+    </div>
+
+    <!-- Right links + region switcher -->
+    <div class="nav-links nav-right">
+      <a href="health-benefits.html" id="nav-benefits">BENEFITS</a>
+      <a href="contact.html" id="nav-contact">CONTACT</a>
+      <!-- Region Switcher injected here by region.js -->
+      <a href="checkout.html" class="btn-solid" style="padding:0.5rem 1.5rem;" id="nav-checkout">CART</a>
+    </div>
   </nav>
 
   <!-- HERO -->
   <section class="fullscreen-section centered hero" style="min-height: 70vh; padding-top: 10rem;">
       <div class="hero-reveal" style="text-align: center;">
           <span class="label-micro">CLOVE + COFFEE · NEPAL'S FINEST</span>
-          <h1 class="title-massive" style="font-size: clamp(4rem, 10vw, 8rem);">THE<br />SHOP</h1>
+          <h1 class="title-massive" style="font-size: clamp(3rem, 8vw, 6rem);">THE SHOP</h1>
           <div class="vertical-line" style="margin: 2rem auto; height: 60px;"></div>
-          <p class="subtitle" style="margin: 0 auto 2rem;">Clove coffee, accessories, bundles &amp; apparel — all crafted with intention.</p>
+          <p class="subtitle" style="margin: 0 auto 2rem; max-width: 600px;">Clove coffee, accessories, bundles &amp; apparel — all crafted with intention.</p>
           <div class="shop-hero-tagline">
               <span class="tagline-pill">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 8 8z"/></svg>
@@ -161,131 +174,9 @@
               <button class="filter-btn" data-filter="apparel">APPAREL</button>
           </div>
 
-          <div class="product-grid">
+          <!-- REGIONAL PRICING GRID — rendered by JS -->
+          <div class="product-grid" id="lb-shop-grid"></div>
 
-              <!-- 250G -->
-              <div class="product-card" data-category="coffee" id="product-250g">
-                  <div class="product-badge">BESTSELLER</div>
-                  <img src="images/product-hero-250g.jpg" alt="250G Lwang Black Clove Coffee" class="product-img" />
-                  <span class="label-micro" style="margin-bottom: 0.5rem;">COFFEE / 250G</span>
-                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Lwang Black 250G</h2>
-                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Our signature clove-infused specialty Arabica. Bold, aromatic, and loaded with antioxidants. Perfect starter size.</p>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 1,599</span>
-                      <button class="btn-solid add-btn" data-name="250G Lwang Black" data-price="1599" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
-                  </div>
-              </div>
-
-              <!-- 500G -->
-              <div class="product-card" data-category="coffee" id="product-500g">
-                  <div class="product-badge">POPULAR</div>
-                  <img src="images/product-hero-500g.jpg" alt="500G Lwang Black Clove Coffee" class="product-img" />
-                  <span class="label-micro" style="margin-bottom: 0.5rem;">COFFEE / 500G</span>
-                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Lwang Black 500G</h2>
-                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">The full Lwang Black experience. Rich clove fusion with specialty Arabica. Bold, deep, and satisfying every single cup.</p>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 2,599</span>
-                      <button class="btn-solid add-btn" data-name="500G Lwang Black" data-price="2599" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
-                  </div>
-              </div>
-
-              <!-- DRIP BAGS -->
-              <div class="product-card" data-category="coffee">
-                  <img src="images/catalogue-1.jpg" alt="Lwang Black Drip Coffee Bags" class="product-img" />
-                  <span class="label-micro" style="margin-bottom: 0.5rem;">COFFEE / DRIP</span>
-                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Drip Coffee Bags</h2>
-                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Convenient single-serve drip bags. Perfect taste anywhere — no equipment needed. Clove goodness on the go.</p>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 1,499</span>
-                      <button class="btn-solid add-btn" data-name="Drip Coffee Bags" data-price="1499" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
-                  </div>
-              </div>
-
-              <!-- FRENCH PRESS -->
-              <div class="product-card" data-category="accessories">
-                  <img src="images/catalogue-2.jpg" alt="French Press by Lwang Black" class="product-img" />
-                  <span class="label-micro" style="margin-bottom: 0.5rem;">ACCESSORIES</span>
-                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">French Press</h2>
-                  <p style="margin-bottom: 1rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">450ml plunge for the perfect brew. Built to maximize flavor extraction with every press.</p>
-                  <div class="variant-options">
-                      <button class="variant-btn selected">GREY</button>
-                      <button class="variant-btn">WHITE</button>
-                      <button class="variant-btn">BLACK</button>
-                  </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 1,899</span>
-                      <button class="btn-solid add-btn" data-name="French Press" data-price="1899" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
-                  </div>
-              </div>
-
-              <!-- BREWING POT -->
-              <div class="product-card" data-category="accessories">
-                  <img src="images/catalogue-2.jpg" alt="Lwang Black Brewing Pot" class="product-img" />
-                  <span class="label-micro" style="margin-bottom: 0.5rem;">ACCESSORIES</span>
-                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Brewing Pot</h2>
-                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Hand-crafted premium brewing pot. Designed to maximize the clove fusion flavor and aroma with every brew.</p>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 1,299</span>
-                      <button class="btn-solid add-btn" data-name="Brewing Pot" data-price="1299" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
-                  </div>
-              </div>
-
-              <!-- DRIP & SIP -->
-              <div class="product-card" data-category="accessories">
-                  <img src="images/catalogue-3.jpg" alt="LB Drip & Sip Set" class="product-img" />
-                  <span class="label-micro" style="margin-bottom: 0.5rem;">ACCESSORIES / SET</span>
-                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Drip &amp; Sip Set</h2>
-                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Complete drip setup — everything you need for a perfect, clean cup. Minimalist, precise, effortless.</p>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 2,599</span>
-                      <button class="btn-solid add-btn" data-name="Drip & Sip Set" data-price="2599" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
-                  </div>
-              </div>
-
-              <!-- GIFT SET -->
-              <div class="product-card" data-category="bundles" id="product-giftset">
-                  <div class="product-badge">🎁 FREE T-SHIRT</div>
-                  <img src="images/product-hero-giftset.jpg" alt="Pot & Press Gift Set" class="product-img" />
-                  <span class="label-micro" style="margin-bottom: 0.5rem; color: var(--accent);">BUNDLE — BEST VALUE</span>
-                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Pot &amp; Press Gift Set</h2>
-                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">500g coffee + Drip &amp; Sip Set + Free Lwang Black T-shirt. The ultimate gift for coffee lovers.</p>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 6,699</span>
-                      <button class="btn-solid add-btn" data-name="Pot & Press Gift Set" data-price="6699" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
-                  </div>
-              </div>
-
-              <!-- 2.0 COMBO -->
-              <div class="product-card" data-category="bundles">
-                  <img src="images/catalogue-3.jpg" alt="Lwang Black 2.0 Combo Set" class="product-img" />
-                  <span class="label-micro" style="margin-bottom: 0.5rem;">BUNDLE</span>
-                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">2.0 Combo Set</h2>
-                  <p style="margin-bottom: 2rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Two French Presses + 500g Lwang Black. Built for sharing the bold clove experience with someone special.</p>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 6,099</span>
-                      <button class="btn-solid add-btn" data-name="2.0 Combo Set" data-price="6099" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
-                  </div>
-              </div>
-
-              <!-- T-SHIRT -->
-              <div class="product-card" data-category="apparel">
-                  <img src="images/catalogue-4.jpg" alt="Lwang Black Classic T-Shirt" class="product-img" />
-                  <span class="label-micro" style="margin-bottom: 0.5rem;">APPAREL / LIMITED</span>
-                  <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; font-weight: 400;">Classic T-Shirt</h2>
-                  <p style="margin-bottom: 1rem; flex-grow: 1; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7;">Premium cotton tee with the Lwang Black tiger crest. Limited run. Wear the movement.</p>
-                  <div class="variant-options">
-                      <button class="variant-btn selected">S</button>
-                      <button class="variant-btn">M</button>
-                      <button class="variant-btn">L</button>
-                      <button class="variant-btn">XL</button>
-                  </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-family: var(--font-heading); font-size: 1.5rem;">Rs 995</span>
-                      <button class="btn-solid add-btn" data-name="Classic T-Shirt" data-price="995" style="padding: 0.8rem 1.5rem;">ADD TO CART</button>
-                  </div>
-              </div>
-
-          </div>
       </div>
   </section>
 
@@ -351,53 +242,137 @@
 
   <script src="script.js"></script>
   <script>
-    // Filter logic
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const filter = btn.dataset.filter;
-            document.querySelectorAll('.product-card').forEach(card => {
-                if (filter === 'all' || card.dataset.category === filter) {
-                    card.style.display = 'flex';
-                    gsap.fromTo(card, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" });
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-            ScrollTrigger.refresh();
-        });
+  // ── Active filter ────────────────────────
+  let _currentFilter = 'all';
+
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _currentFilter = btn.dataset.filter;
+      renderRegionalPrices(LB_REGION.get());
+    });
+  });
+
+  // ── Build product card HTML ───────────────
+  function buildProductCard(p, priceObj, country) {
+    const available = !!priceObj;
+    const badgeHtml = p.badge ? `<div class="product-badge">${p.badge}</div>` : '';
+    const labelColor = p.category === 'bundles' ? 'color: var(--accent);' : '';
+
+    let variantHtml = '';
+    if (p.variants) {
+      variantHtml = `<div class="variant-options" id="var-${p.id}">
+        ${p.variants.map((v, i) => `<button class="variant-btn ${i===0?'selected':''}" onclick="selectVariant(event,'${p.id}','${v}')">${v}</button>`).join('')}
+      </div>`;
+    }
+
+    let bottomHtml;
+    if (available) {
+      bottomHtml = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto;">
+          <span style="font-family:var(--font-heading); font-size:1.5rem;">${priceObj.display}</span>
+          <button class="btn-solid" style="padding:0.8rem 1.5rem;"
+            onclick="addToCartFromShop('${p.id}', this)">
+            ADD TO CART
+          </button>
+        </div>`;
+    } else {
+      bottomHtml = `
+        <div class="lb-region-unavailable" style="margin-top:auto;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          Not available in your region
+        </div>`;
+    }
+
+    return `
+      <div class="product-card" data-category="${p.category}" id="product-${p.id}">
+        ${badgeHtml}
+        <a href="product.html?id=${p.id}" style="display:block; overflow:hidden; border-radius:8px;">
+          <img src="${p.image}" alt="${p.name}" class="product-img" style="cursor:pointer;" onerror="this.src='images/product-hero-500g.jpg'" />
+        </a>
+        <span class="label-micro" style="margin-bottom:0.5rem;${labelColor}">${p.category.toUpperCase()}${p.badge && p.category==='bundles' ? ' — BEST VALUE' : ''}</span>
+        <h2 style="font-family:var(--font-heading); font-size:1.8rem; margin-bottom:1rem; font-weight:400;">
+          <a href="product.html?id=${p.id}" style="color:inherit; text-decoration:none;">${p.name}</a>
+        </h2>
+        <p style="margin-bottom:1.5rem; flex-grow:1; color:var(--text-muted); font-size:0.9rem; line-height:1.7;">${p.description}</p>
+        ${variantHtml}
+        ${bottomHtml}
+      </div>`;
+  }
+
+
+  // ── Render all products for current region ─
+  function renderRegionalPrices(countryCode) {
+    const grid = document.getElementById('lb-shop-grid');
+    if (!grid || !window.LB_PRODUCTS) return;
+
+    const products = Object.values(window.LB_PRODUCTS);
+    let html = '';
+
+    products.forEach(p => {
+      if (_currentFilter !== 'all' && p.category !== _currentFilter) return;
+      const priceObj = window.getProductPrice(p.id, countryCode);
+      html += buildProductCard(p, priceObj, countryCode);
     });
 
-    // Variants
+    grid.innerHTML = html;
+
+    // Animate in
+    gsap.fromTo('#lb-shop-grid .product-card',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.4, stagger: 0.06, ease: 'power2.out' }
+    );
+
+    // Re-wire variant buttons
     document.querySelectorAll('.variant-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const group = e.target.closest('.variant-options');
-            group.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-
-            // Image fade animation when choosing variants
-            const card = e.target.closest('.product-card');
-            const img = card.querySelector('.product-img');
-            if (img) {
-                gsap.fromTo(img, { opacity: 0.3 }, { opacity: 1, duration: 0.5, ease: "power2.out" });
-            }
-        });
+      btn.addEventListener('click', (e) => {
+        const group = e.target.closest('.variant-options');
+        group.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        const card = e.target.closest('.product-card');
+        const img = card?.querySelector('.product-img');
+        if (img) gsap.fromTo(img, { opacity: 0.3 }, { opacity: 1, duration: 0.4 });
+      });
     });
+  }
 
-    // Cart Toast
-    const toast = document.getElementById('cartToast');
-    let toastTimer;
-    document.querySelectorAll('.add-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const name = btn.dataset.name;
-            const price = btn.dataset.price;
-            toast.textContent = `✓ ${name} (Rs ${price}) ADDED TO CART`;
-            toast.classList.add('show');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
-        });
-    });
+  // ── Track selected variant per product ────
+  const _selectedVariants = {};
+  function selectVariant(e, productId, variantName) {
+    _selectedVariants[productId] = variantName;
+    const group = e.target.closest('.variant-options');
+    group?.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('selected'));
+    e.target.classList.add('selected');
+  }
+
+  // ── Add to cart from shop ─────────────────
+  function addToCartFromShop(productId, btn) {
+    const variant = _selectedVariants[productId] || null;
+    if (window.LB_CART) {
+      LB_CART.add(productId, variant);
+    }
+    // Button flash
+    btn.textContent = '✓ ADDED';
+    btn.style.background = '#2e624c';
+    btn.style.color = '#fff';
+    setTimeout(() => { btn.textContent = 'ADD TO CART'; btn.style.background=''; btn.style.color=''; }, 1500);
+  }
+
+  // ── Listen for region changes ─────────────
+  document.addEventListener('lb:regionChanged', (e) => {
+    renderRegionalPrices(e.detail.country);
+  });
+
+  // ── Init on load ──────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    // Wait for region to init, then render
+    setTimeout(() => {
+      const country = window.LB_REGION?.get() || 'US';
+      renderRegionalPrices(country);
+    }, 300);
+  });
   </script>
 </body>
 </html>
