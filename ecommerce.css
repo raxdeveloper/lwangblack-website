@@ -326,6 +326,7 @@ body .nav-brand {
 .co-select option { background: #0a0b0a; }
 
 .co-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+@media (max-width: 600px) { .co-row { grid-template-columns: 1fr; gap: 0; } }
 
 .co-shipping-option {
   border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;

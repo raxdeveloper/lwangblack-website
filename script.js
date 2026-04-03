@@ -6,11 +6,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // 1. Preloader out animation
     const preloader = document.getElementById('preloader');
     if(preloader) {
+        // Changed from window.onload to DOMContentLoaded with zero delay for immediate render
         gsap.to(preloader, {
             opacity: 0,
-            duration: 1,
+            duration: 0.3,
             ease: "power2.inOut",
-            delay: 0.8,
+            delay: 0,
             onComplete: () => {
                 preloader.style.display = 'none';
                 initGSAP();
