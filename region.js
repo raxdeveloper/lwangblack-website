@@ -244,7 +244,7 @@ function updateHomeProducts(code) {
         <p style="margin-bottom:2rem; flex-grow:1; color:var(--text-muted); font-size:0.9rem;">${prod.description}</p>
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span style="font-family:var(--font-heading); font-size:1.5rem;">${priceDisplay}</span>
-          <button class="btn-solid" style="padding:0.8rem 1.5rem;" onclick="event.stopPropagation(); if (window.Cart) Cart.add('${id}')">ADD</button>
+          <button class="btn-solid" style="padding:0.8rem 1.5rem;" onclick="event.stopPropagation(); if (window.LB_CART) LB_CART.add('${id}')">ADD</button>
         </div>
       </div>
     `;

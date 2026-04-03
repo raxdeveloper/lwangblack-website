@@ -144,7 +144,7 @@ const LB_CART = {
     `).join('');
 
     if (footer) {
-      const canCheckout = window.LB_REGION?.canCheckout() ?? true;
+      const canCheckout = typeof window.LB_REGION?.canCheckout === 'function' ? window.LB_REGION.canCheckout() : true;
       footer.innerHTML = `
         <div class="lb-cart-subtotal">
           <span>Subtotal</span>
