@@ -83,12 +83,7 @@ function initRegionUI() {
     navRight.prepend(switcher);
   }
 
-  // Inject Flag Bar below nav-brand
-  const navBrand = document.querySelector('.nav-brand');
-  if (navBrand) {
-    const flagBar = buildFlagBar();
-    navBrand.after(flagBar);
-  }
+  // Flag Bar below nav-brand removed
 
     // DROPDOWN HAS BEEN REMOVED TO LOCK REGION
   // Listen to region changes
@@ -121,9 +116,7 @@ function updateRegionUI(code, region) {
   if (flagDisplay) { flagDisplay.src = `https://flagcdn.com/${slug}.svg`; flagDisplay.alt = region.name; }
   if (nameDisplay) nameDisplay.textContent = region.name;
 
-  // Update flag bar below logo (flag image only)
-  const nrfbFlag = document.getElementById('nrfbFlag');
-  if (nrfbFlag) { nrfbFlag.src = `https://flagcdn.com/${slug}.svg`; nrfbFlag.alt = region.name; }
+  // Flag bar below logo removed
 
   // Update hero region badge
   const heroFlag = document.getElementById('heroRegionFlag');
