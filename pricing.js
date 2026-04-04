@@ -322,7 +322,21 @@ function getProductPrice(productId, countryCode) {
     if (!product.allowed_regions.includes(countryCode)) return null;
   }
   const prices = product.prices;
-  return prices[countryCode] || prices.DEFAULT || null;
+  let basePrice = prices[countryCode] || prices.DEFAULT || null;
+
+  if (countryCode === 'AU' && window.AUCurrencyState && window.AUCurrencyState.active && basePrice) {
+    const convertedAmount = basePrice.amount * window.AUCurrencyState.rate;
+    const sym = window.AUCurrencyState.symbol;
+    const cFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(convertedAmount);
+    return {
+      amount: convertedAmount,
+      currency: window.AUCurrencyState.currencyCode,
+      symbol: sym,
+      display: sym + cFormat
+    };
+  }
+
+  return basePrice;
 }
 
 function isProductAvailable(productId, countryCode) {

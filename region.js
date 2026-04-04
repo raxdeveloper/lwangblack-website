@@ -67,6 +67,12 @@ function initRegionUI() {
     updateSchemaContact(region);
     updateHomeProducts(code);
   });
+
+  // Listen to currency changes (sub-region in AU)
+  document.addEventListener('lb:currencyConverted', () => {
+    const activeCode = GeoRouter.get();
+    updateHomeProducts(activeCode);
+  });
 }
 
 /**
