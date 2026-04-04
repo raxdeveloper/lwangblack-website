@@ -729,9 +729,7 @@ body .nav-brand {
 .pp-details {
   display: flex;
   flex-direction: column;
-  position: sticky;
-  top: 120px;
-  align-self: start;
+  justify-content: center;
 }
 
 .pp-breadcrumb {

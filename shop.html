@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" type="image/png" href="images/logo-hero.png" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Shop Lwang Black – Premium Clove Coffee | Nepal's Boldest Brew</title>
@@ -292,9 +291,8 @@
     return `
       <div class="product-card" data-category="${p.category}" data-product-id="${p.id}" id="product-${p.id}">
         ${badgeHtml}
-        <a href="product.html?id=${p.id}" style="display:block; position:relative; overflow:hidden; border-radius:12px;">
+        <a href="product.html?id=${p.id}" style="display:block; overflow:hidden; border-radius:8px;">
           <img src="${p.image}" alt="${pName}" class="product-img" style="cursor:pointer;" onerror="this.src='images/product-hero-500g.jpg'" />
-          <button class="btn-quick-add add-btn" data-id="${p.id}" onclick="event.preventDefault(); addToCartFromShop('${p.id}', this)">QUICK ADD +</button>
         </a>
         <span class="label-micro" style="margin-bottom:0.5rem;${labelColor}">${p.category.toUpperCase()}${badgeText && p.category==='bundles' ? ' — BEST VALUE' : ''}</span>
         <h2 style="font-family:var(--font-heading); font-size:1.8rem; margin-bottom:1rem; font-weight:400;">
