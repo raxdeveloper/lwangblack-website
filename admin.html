@@ -58,10 +58,24 @@
   </div>
 </aside>
 
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <main class="main">
   <div class="topbar">
+    <button class="icon-btn mobile-menu-btn" onclick="toggleSidebar()">☰</button>
     <div class="topbar-title" id="topbarTitle">Home</div>
-    <input class="topbar-search" placeholder="Search orders, products, customers..." oninput="globalSearch(this.value)" id="globalSearchInput"/>
+    <input class="topbar-search" placeholder="Search orders, products..." oninput="globalSearch(this.value)" id="globalSearchInput"/>
+    <script>
+      function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('mobile-open');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+      }
+      // Also close sidebar when a link is clicked on mobile
+      document.querySelectorAll('.nav-item').forEach(el => {
+        el.addEventListener('click', () => {
+          if (window.innerWidth <= 640) toggleSidebar();
+        });
+      });
+    </script>
     <div class="topbar-right">
       <button class="icon-btn" onclick="exportCSV()">⬇ Export</button>
       <button class="icon-btn btn-primary" id="topbarAction" style="display:none"></button>
