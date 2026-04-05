@@ -33,6 +33,11 @@ function buildRegionSwitcher() {
           </button>
         `;
       }).join('')}
+      <div class="rd-divider" style="height:1px; background:rgba(255,255,255,0.1); margin:8px 0;"></div>
+      <button class="region-option reset-option" onclick="window.GeoRouter.reset(); document.getElementById('regionDropdown').classList.remove('active');" style="opacity:0.8; font-size:0.85rem;">
+        <span style="margin-right:8px;">🌐</span>
+        <span>Auto-detect (IP)</span>
+      </button>
     </div>
   `;
 
@@ -42,12 +47,12 @@ function buildRegionSwitcher() {
     if (btn && drop) {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        drop.classList.toggle('active');
+        drop.classList.toggle('open');
         btn.classList.toggle('active');
       });
       document.addEventListener('click', (e) => {
         if (!wrapper.contains(e.target)) {
-          drop.classList.remove('active');
+          drop.classList.remove('open');
           btn.classList.remove('active');
         }
       });

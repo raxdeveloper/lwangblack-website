@@ -278,37 +278,79 @@ const GeoRouter = {
 
   /**
    * Initialize routing:
-   * 1. Check bot → AU
-   * 2. Check stored preference
-   * 3. Auto-detect via IP
+   * 1. URL parameter (?country=...) -> Highest priority
+   * 2. Check stored preference (localStorage)
+   * 3. Auto-detect via IP (Fallback)
    */
   async init() {
+    // 1. URL Parameter Override
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlCountry = urlParams.get('country');
+    if (urlCountry) {
+      const code = this._normalizeCode(urlCountry);
+      if (SUPPORTED_CODES.includes(code)) {
+        console.log(`[GeoRouter] Overriding via URL: ${code}`);
+        this.current = code;
+        this.persist(code); // Persist URL selection if desired, or keep it session-only? 
+        // User said: "Allow manual override using URL... This should override everything else"
+        // Usually URL override shouldn't necessarily persist forever, but let's follow the "manual override" intent.
+        this._broadcast(this.current);
+        return this.current;
+      }
+    }
+
+    // 2. Stored Preference
     const stored = this.getStored();
     if (stored && SUPPORTED_CODES.includes(stored)) {
       this.current = stored;
     } else {
+      // 3. IP Detection Fallback
       this.current = await this.detect();
-      // Don't persist auto-detected — only persist manual selections
+      // Don't auto-persist detected region so user can still be auto-detected if they move
     }
+
     this._broadcast(this.current);
     return this.current;
+  },
+
+  /**
+   * Normalize country code (UK -> GB, nepal -> NP)
+   */
+  _normalizeCode(code) {
+    if (!code) return 'AU';
+    const clean = code.toLowerCase().trim();
+    // Check if it's a slug first
+    if (SLUG_TO_CODE[clean]) return SLUG_TO_CODE[clean];
+    // Otherwise assume it's a code
+    const upper = clean.toUpperCase();
+    return upper === 'UK' ? 'GB' : upper;
   },
 
   /**
    * Manually set region (persists to localStorage)
    */
   set(code) {
-    const normalized = code.toUpperCase() === 'UK' ? 'GB' : code.toUpperCase();
-    this.current = SUPPORTED_CODES.includes(normalized) ? normalized : 'AU';
+    this.current = this._normalizeCode(code);
+    if (!SUPPORTED_CODES.includes(this.current)) this.current = 'AU';
     this.persist(this.current);
     this._broadcast(this.current);
+  },
+
+  /**
+   * Reset to auto-detection (clears localStorage)
+   */
+  async reset() {
+    localStorage.removeItem(this.STORAGE_KEY);
+    this.current = await this.detect();
+    this._broadcast(this.current);
+    console.log('[GeoRouter] Reset to auto-detect:', this.current);
   },
 
   /**
    * Get current region code
    */
   get() {
-    return this.current || this.getStored() || 'AU';
+    return this.current || 'AU';
   },
 
   /**
@@ -321,6 +363,11 @@ const GeoRouter = {
     }));
   }
 };
+
+/**
+ * Global helper to get current country code
+ */
+window.getCurrentCountry = () => GeoRouter.get();
 
 // Expose globally
 window.GeoRouter = GeoRouter;
