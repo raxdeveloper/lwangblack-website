@@ -15,6 +15,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: '../admin',
+    emptyOutDir: true,
   },
 })
