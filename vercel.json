@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "npm --prefix admin-dashboard ci && npm --prefix admin-dashboard run build",
   "headers": [
     {
       "source": "/api/(.*)",
@@ -12,9 +13,13 @@
     }
   ],
   "redirects": [
-    { "source": "/admin.html", "destination": "/admin/", "permanent": true }
+    { "source": "/admin.html", "destination": "/admin/", "permanent": true },
+    { "source": "/admin", "destination": "/admin/", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/admin/", "destination": "/admin-dashboard/dist/index.html" },
+    { "source": "/admin/(.*\\..*)", "destination": "/admin-dashboard/dist/$1" },
+    { "source": "/admin/(.*)", "destination": "/admin-dashboard/dist/index.html" },
     { "source": "/api/(.*)", "destination": "/api/" }
   ],
   "env": {
