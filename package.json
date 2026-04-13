@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel --prod",
+    "build": "npm --prefix admin-dashboard ci --prefer-offline && npm --prefix admin-dashboard run build",
     "backend:dev": "npm --prefix backend run dev",
     "admin:dev": "npm --prefix admin-dashboard run dev -- --host --port 5173"
   },

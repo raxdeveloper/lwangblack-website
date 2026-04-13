@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm --prefix admin-dashboard ci && npm --prefix admin-dashboard run build",
+  "buildCommand": "npm run build",
   "headers": [
     {
       "source": "/api/(.*)",
