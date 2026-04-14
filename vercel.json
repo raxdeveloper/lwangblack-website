@@ -1,6 +1,7 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
+  "outputDirectory": ".",
 
   "headers": [
     {
@@ -10,20 +11,33 @@
         { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PATCH,PUT,DELETE,OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
       ]
+    },
+    {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|webp|svg|gif|ico|woff|woff2|ttf|eot))",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(.*\\.html)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
     }
   ],
 
   "redirects": [
-    { "source": "/admin.html", "destination": "/admin/", "permanent": true },
-    { "source": "/admin",      "destination": "/admin/", "permanent": true }
+    { "source": "/admin",      "destination": "/admin/",       "permanent": false },
+    { "source": "/admin.html", "destination": "/admin/",       "permanent": true  }
   ],
 
   "rewrites": [
-    { "source": "/admin/((?!assets|icons).*)", "destination": "/admin/index.html" }
+    { "source": "/admin/assets/(.*)", "destination": "/admin/assets/$1" },
+    { "source": "/admin/(.*)",        "destination": "/admin/index.html" }
   ],
 
   "functions": {
-    "api/index.js":       { "memory": 512, "maxDuration": 30 },
-    "api/[...path].js":   { "memory": 512, "maxDuration": 30 }
+    "api/index.js":     { "memory": 512, "maxDuration": 30 },
+    "api/[...path].js": { "memory": 512, "maxDuration": 30 }
   }
 }
