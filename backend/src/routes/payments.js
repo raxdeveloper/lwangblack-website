@@ -23,6 +23,7 @@ function getCarrierByCountry(country) {
   const c = (country || '').toUpperCase();
   if (c === 'NP') return 'Pathao';
   if (c === 'CA') return 'Chit Chats';
+  if (c === 'US') return 'USPS';
   if (c === 'NZ') return 'NZ Post';
   if (c === 'JP') return 'Japan Post';
   return 'Australia Post';
@@ -190,8 +191,6 @@ router.get('/methods', (req, res) => {
   const country = (req.query.country || 'US').toUpperCase();
 
   const METHOD_META = {
-    nabil:      { id: 'nabil',      label: 'Nabil Bank',              icon: '🏦', description: "Pay directly via Nabil Bank" },
-    khalti:     { id: 'khalti',     label: 'Khalti',                  icon: '🟣', description: 'Pay with Khalti digital wallet' },
     cod:        { id: 'cod',        label: 'Cash on Delivery',        icon: '💵', description: 'Pay Rs when your order arrives' },
     paypal:     { id: 'paypal',     label: 'PayPal',                  icon: '🅿️', description: 'Pay securely with your PayPal account' },
     stripe:     { id: 'stripe',     label: 'Credit / Debit Card',     icon: '💳', description: 'Visa, Mastercard, AMEX — encrypted by Stripe' },
@@ -336,43 +335,6 @@ router.post('/checkout', async (req, res) => {
       return res.json({ orderId, approvalUrl: approvalLink.href, paypalOrderId: orderData.id });
     }
 
-    // ── Khalti ──
-    if (gateway === 'khalti') {
-      const khaltiCfg = await dynConfig.getGatewayConfig('khalti');
-      if (!khaltiCfg.secretKey) {
-        await cancelOrder(orderId);
-        return res.status(503).json({
-          error: 'Khalti is not configured. Add your Khalti Secret Key in Admin → Settings → Payments.',
-          gateway, setup: 'https://khalti.com/api/v2/',
-        });
-      }
-      const baseUrl = khaltiCfg.isLive ? khaltiCfg.liveUrl : khaltiCfg.testUrl;
-      const khaltiRes = await fetch(`${baseUrl}/epayment/initiate/`, {
-        method: 'POST',
-        headers: { 'Authorization': `Key ${khaltiCfg.secretKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          return_url: `${origin}/api/payments/khalti-verify?orderId=${orderId}`,
-          website_url: origin,
-          amount: Math.round(parseFloat(total) * 100),
-          purchase_order_id: orderId,
-          purchase_order_name: `Lwang Black Order ${orderId}`,
-          customer_info: {
-            name: `${customer.fname} ${customer.lname}`.trim(),
-            email: customer.email,
-            phone: customer.phone || '',
-          },
-        }),
-      });
-      const khaltiData = await khaltiRes.json();
-      if (!khaltiData.payment_url) {
-        await cancelOrder(orderId);
-        return res.status(502).json({ error: khaltiData.detail || 'Khalti initiation failed. Check KHALTI_SECRET_KEY.' });
-      }
-
-      broadcast({ type: 'order:new', data: { orderId, country, total, status: 'pending', method: 'khalti' } });
-      return res.json({ orderId, paymentUrl: khaltiData.payment_url, pidx: khaltiData.pidx });
-    }
-
     // ── eSewa ──
     if (gateway === 'esewa') {
       if (!config.esewa.merchantId || !config.esewa.secretKey) {
@@ -402,42 +364,6 @@ router.post('/checkout', async (req, res) => {
         gatewayUrl: esewaCfg.isLive ? esewaCfg.liveUrl : esewaCfg.testUrl,
         formData, transactionUuid,
       });
-    }
-
-    // ── Nabil Bank ──
-    if (gateway === 'nabil' || gateway === 'nabil_bank') {
-      const nabilCfg = await dynConfig.getGatewayConfig('nabil');
-      const merchantId = nabilCfg.merchantId;
-      const secretKey  = nabilCfg.secretKey;
-      if (!merchantId || merchantId === 'NB_MERCHANT_PLACEHOLDER') {
-        await cancelOrder(orderId);
-        return res.status(503).json({
-          error: 'Nabil Bank is not configured. Add your Nabil Merchant ID and Secret Key in Admin → Settings → Payments.',
-          gateway, setup: 'Contact Nabil Bank (Nepal) for merchant integration credentials.',
-        });
-      }
-      const transactionUuid = `${orderId}-${Date.now()}`;
-      const totalAmount = parseFloat(total).toFixed(2);
-      const message = `merchant_id=${merchantId},transaction_uuid=${transactionUuid},amount=${totalAmount}`;
-      const signature = crypto.createHmac('sha256', secretKey).update(message).digest('base64');
-      const gatewayUrl = nabilCfg.isLive
-        ? 'https://payment.nabilbank.com/checkout'
-        : 'https://payment-sandbox.nabilbank.com/checkout';
-      const formData = {
-        merchant_id: merchantId,
-        transaction_uuid: transactionUuid,
-        amount: totalAmount,
-        currency: 'NPR',
-        product_name: 'Lwang Black Coffee',
-        customer_name: `${customer.fname} ${customer.lname}`.trim(),
-        customer_phone: customer.phone || '',
-        success_url: `${origin}/api/payments/nabil-callback?orderId=${orderId}&status=success`,
-        failure_url: `${origin}/checkout.html?failed=true&order_id=${orderId}`,
-        signature,
-        signed_field_names: 'merchant_id,transaction_uuid,amount',
-      };
-      broadcast({ type: 'order:new', data: { orderId, country, total, status: 'pending', method: gateway } });
-      return res.json({ orderId, gatewayUrl, formData, transactionUuid, isTest: !nabilCfg.isLive });
     }
 
     // ── Cash on Delivery ──
@@ -794,80 +720,6 @@ router.post('/cod-place', async (req, res) => {
   }
 });
 
-// ── POST /api/payments/nabil-initiate ────────────────────────────────────────
-// Nabil Bank payment — Nepal region
-router.post('/nabil-initiate', async (req, res) => {
-  try {
-    const { orderId, amount, customerName, customerPhone } = req.body;
-    if (!orderId || !amount) return res.status(400).json({ error: 'orderId and amount required' });
-
-    const merchantId = config.nabil?.merchantId || 'NB_MERCHANT_PLACEHOLDER';
-    const secretKey  = config.nabil?.secretKey  || '';
-    const isLive     = config.nabil?.isLive     || false;
-
-    const transactionUuid = `${orderId}-${Date.now()}`;
-    const totalAmount = parseFloat(amount).toFixed(2);
-    const origin = req.headers.origin || config.siteUrl;
-
-    // Generate HMAC-SHA256 signature
-    const message = `merchant_id=${merchantId},transaction_uuid=${transactionUuid},amount=${totalAmount}`;
-    const signature = secretKey
-      ? crypto.createHmac('sha256', secretKey).update(message).digest('base64')
-      : 'DEMO_SIGNATURE';
-
-    const gatewayUrl = isLive
-      ? 'https://payment.nabilbank.com/checkout'
-      : 'https://payment-sandbox.nabilbank.com/checkout';
-
-    const formData = {
-      merchant_id: merchantId,
-      transaction_uuid: transactionUuid,
-      amount: totalAmount,
-      currency: 'NPR',
-      product_name: 'Lwang Black Coffee',
-      customer_name: customerName || '',
-      customer_phone: customerPhone || '',
-      success_url: `${origin}/api/payments/nabil-callback?orderId=${orderId}&status=success`,
-      failure_url: `${origin}/checkout.html?nabil_failed=true&orderId=${orderId}`,
-      signature,
-      signed_field_names: 'merchant_id,transaction_uuid,amount',
-    };
-
-    if (merchantId === 'NB_MERCHANT_PLACEHOLDER') {
-      return res.status(503).json({ error: 'Nabil Bank payment gateway is not configured. Set NABIL_MERCHANT_ID and NABIL_SECRET_KEY in your environment.' });
-    }
-
-    res.json({
-      gatewayUrl,
-      formData,
-      transactionUuid,
-      isTest: !isLive,
-    });
-  } catch (err) {
-    console.error('[Payments] Nabil initiate error:', err);
-    res.status(500).json({ error: 'Nabil Bank payment initiation failed' });
-  }
-});
-
-// ── GET /api/payments/nabil-callback ─────────────────────────────────────────
-// Called by Nabil Bank after payment
-router.get('/nabil-callback', async (req, res) => {
-  try {
-    const { orderId, status, transaction_uuid, amount } = req.query;
-
-    if (status === 'success' && orderId) {
-      await updateOrderStatus(orderId, 'paid', 'nabil', transaction_uuid || `NB-${Date.now()}`);
-      broadcast({ type: 'order:updated', data: { orderId, status: 'paid', method: 'nabil' } });
-    }
-
-    const redirectUrl = `${config.siteUrl}/order-confirmation.html?order_id=${orderId}&method=nabil${status !== 'success' ? '&failed=true' : ''}`;
-    res.redirect(redirectUrl);
-  } catch (err) {
-    console.error('[Payments] Nabil callback error:', err);
-    res.redirect(`${config.siteUrl}/checkout.html?nabil_failed=true`);
-  }
-});
-
 // ── POST /api/payments/esewa-initiate ────────────────────────────────────────
 // Keep eSewa for legacy / fallback
 router.post('/esewa-initiate', async (req, res) => {
@@ -916,92 +768,6 @@ router.get('/esewa-verify', async (req, res) => {
   } catch (err) {
     console.error('[Payments] eSewa verify error:', err);
     res.redirect(`${config.siteUrl}/checkout.html?esewa_failed=true`);
-  }
-});
-
-// ── POST /api/payments/khalti-initiate ────────────────────────────────────────
-router.post('/khalti-initiate', async (req, res) => {
-  try {
-    const { orderId, amount, customerName, customerEmail, customerPhone } = req.body;
-    if (!orderId || !amount) return res.status(400).json({ error: 'orderId and amount required' });
-
-    const khaltiKey = config.khalti.secretKey;
-    if (!khaltiKey) {
-      return res.status(503).json({ error: 'Khalti payment gateway is not configured. Set KHALTI_SECRET_KEY in your environment.' });
-    }
-
-    const baseUrl = config.khalti.isLive ? config.khalti.liveUrl : config.khalti.testUrl;
-    const origin = req.headers.origin || config.siteUrl;
-    const amountInPaisa = Math.round(parseFloat(amount) * 100);
-
-    const khaltiRes = await fetch(`${baseUrl}/epayment/initiate/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Key ${khaltiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        return_url: `${origin}/api/payments/khalti-verify?orderId=${orderId}`,
-        website_url: origin,
-        amount: amountInPaisa,
-        purchase_order_id: orderId,
-        purchase_order_name: `Lwang Black Order ${orderId}`,
-        customer_info: {
-          name: customerName || '',
-          email: customerEmail || '',
-          phone: customerPhone || '',
-        },
-      }),
-    });
-    const khaltiData = await khaltiRes.json();
-
-    if (khaltiData.payment_url) {
-      res.json({
-        paymentUrl: khaltiData.payment_url,
-        pidx: khaltiData.pidx,
-        orderId,
-        isTest: !config.khalti.isLive,
-      });
-    } else {
-      res.status(400).json({ error: khaltiData.detail || 'Khalti initiation failed', details: khaltiData });
-    }
-  } catch (err) {
-    console.error('[Payments] Khalti initiate error:', err);
-    res.status(500).json({ error: 'Khalti payment initiation failed' });
-  }
-});
-
-// ── GET /api/payments/khalti-verify ──────────────────────────────────────────
-router.get('/khalti-verify', async (req, res) => {
-  try {
-    const { pidx, orderId, status: queryStatus } = req.query;
-    const khaltiKey = config.khalti.secretKey;
-
-    if (!khaltiKey) {
-      return res.redirect(`${config.siteUrl}/checkout.html?khalti_failed=true`);
-    }
-
-    const baseUrl = config.khalti.isLive ? config.khalti.liveUrl : config.khalti.testUrl;
-    const lookupRes = await fetch(`${baseUrl}/epayment/lookup/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Key ${khaltiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ pidx }),
-    });
-    const lookupData = await lookupRes.json();
-
-    if (lookupData.status === 'Completed') {
-      await updateOrderStatus(orderId, 'paid', 'khalti', pidx);
-      broadcast({ type: 'order:updated', data: { orderId, status: 'paid', method: 'khalti' } });
-    }
-
-    const failed = lookupData.status !== 'Completed' ? '&failed=true' : '';
-    res.redirect(`${config.siteUrl}/order-confirmation.html?order_id=${orderId}&method=khalti${failed}`);
-  } catch (err) {
-    console.error('[Payments] Khalti verify error:', err);
-    res.redirect(`${config.siteUrl}/checkout.html?khalti_failed=true`);
   }
 });
 

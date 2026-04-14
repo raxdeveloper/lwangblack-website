@@ -11,9 +11,7 @@ import {
 const LOGOS = {
   stripe:     'https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg',
   paypal:     'https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg',
-  khalti:     'https://khalti.com/favicon.ico',
   esewa:      'https://esewa.com.np/common/images/esewa_logo.png',
-  nabil:      'https://www.google.com/s2/favicons?domain=nabilbank.com&sz=64',
   visa:       'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg',
   mastercard: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg',
   amex:       'https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg',
@@ -330,7 +328,6 @@ export default function SettingsPage() {
                   { key:'googlepay',  label:'Google Pay' },
                   { key:'afterpay',   label:'Afterpay' },
                   { key:'paypal',     label:'PayPal' },
-                  { key:'khalti',     label:'Khalti' },
                   { key:'esewa',      label:'eSewa' },
                 ].map(({ key, label }) => (
                   <div key={key} className="flex items-center gap-1.5 bg-white rounded-lg px-2.5 py-1.5 h-9">
@@ -403,25 +400,6 @@ export default function SettingsPage() {
               <SaveBtn keys={['paypal_client_id','paypal_client_secret','paypal_mode']} label="Save PayPal settings" />
             </GatewayCard>
 
-            {/* Khalti (Nepal) */}
-            <GatewayCard
-              logo={LOGOS.khalti}
-              name="Khalti"
-              description="Nepal digital wallet. Accepts Khalti balance, eSewa, bank transfers."
-              status={gatewayStatus.khalti?.enabled}
-              docUrl="https://khalti.com/api/v2/"
-            >
-              <ModeToggle label="Mode" value={field('khalti_mode') || gatewayStatus.khalti?.mode || 'test'} onChange={v => setField('khalti_mode', v)} />
-              <SecretInput
-                label="Live Secret Key"
-                value={pending.khalti_secret_key || ''}
-                onChange={v => setField('khalti_secret_key', v)}
-                placeholder="live_secret_key_..."
-                hint={gatewayStatus.khalti?.keyHint}
-              />
-              <SaveBtn keys={['khalti_secret_key','khalti_mode']} label="Save Khalti settings" />
-            </GatewayCard>
-
             {/* eSewa (Nepal) */}
             <GatewayCard
               logo={LOGOS.esewa}
@@ -447,35 +425,6 @@ export default function SettingsPage() {
               <SaveBtn keys={['esewa_merchant_id','esewa_secret_key','esewa_mode']} label="Save eSewa settings" />
             </GatewayCard>
 
-            {/* Nabil Bank (Nepal) */}
-            <GatewayCard
-              logo={LOGOS.nabil}
-              name="Nabil Bank"
-              description="Nepal's Nabil Bank hosted payment gateway for card and direct bank payments."
-              status={gatewayStatus.nabil?.enabled}
-              docUrl="https://www.nabilbank.com"
-            >
-              <ModeToggle label="Mode" value={field('nabil_mode') || gatewayStatus.nabil?.mode || 'test'} onChange={v => setField('nabil_mode', v)} />
-              <TextInput
-                label="Merchant ID"
-                value={field('nabil_merchant_id')}
-                onChange={v => setField('nabil_merchant_id', v)}
-                placeholder="NB_MERCHANT_ID"
-              />
-              <SecretInput
-                label="Secret Key"
-                value={pending.nabil_secret_key || ''}
-                onChange={v => setField('nabil_secret_key', v)}
-                placeholder="nabil_secret_..."
-                hint={gatewayStatus.nabil?.hasSecret ? '••••••••' : ''}
-              />
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-300">
-                <p className="font-medium mb-1">Bank details for manual transfers</p>
-                <p>Bank: Nabil Bank Ltd. · Beneficiary: LWANG BLACK PRODUCTS PVT.LTD</p>
-                <p>Account: <span className="font-mono font-bold">15301017500402</span></p>
-              </div>
-              <SaveBtn keys={['nabil_merchant_id','nabil_secret_key','nabil_mode']} label="Save Nabil Bank settings" />
-            </GatewayCard>
           </>
         )}
 
