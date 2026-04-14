@@ -4,7 +4,7 @@
   "description": "Lwang Black ecommerce — static storefront + admin dashboard + API proxy",
   "main": "api/index.js",
   "scripts": {
-    "build":       "npm --prefix admin-dashboard install && npm --prefix admin-dashboard run build",
+    "build":       "node scripts/build.js",
     "dev":         "npm --prefix backend run dev",
     "dev:admin":   "npm --prefix admin-dashboard run dev -- --host --port 5173",
     "dev:vercel":  "vercel dev",
