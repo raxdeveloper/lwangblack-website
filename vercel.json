@@ -1,6 +1,7 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
+
   "headers": [
     {
       "source": "/api/(.*)",
@@ -11,15 +12,18 @@
       ]
     }
   ],
+
   "redirects": [
     { "source": "/admin.html", "destination": "/admin/", "permanent": true },
     { "source": "/admin",      "destination": "/admin/", "permanent": true }
   ],
+
   "rewrites": [
-    { "source": "/admin/((?!assets/).*)", "destination": "/admin/index.html" },
-    { "source": "/api/(.*)",              "destination": "/api/" }
+    { "source": "/admin/((?!assets|icons).*)", "destination": "/admin/index.html" }
   ],
-  "env": {
-    "BACKEND_URL": "https://api.lwangblack.co"
+
+  "functions": {
+    "api/index.js":       { "memory": 512, "maxDuration": 30 },
+    "api/[...path].js":   { "memory": 512, "maxDuration": 30 }
   }
 }

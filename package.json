@@ -1,14 +1,15 @@
 {
   "name": "lwang-black",
   "version": "1.0.0",
-  "description": "Lwang Black ecommerce backend",
+  "description": "Lwang Black ecommerce — static storefront + admin dashboard + API proxy",
   "main": "api/index.js",
   "scripts": {
-    "dev": "vercel dev",
-    "deploy": "vercel --prod",
-    "build": "npm --prefix admin-dashboard ci --prefer-offline && npm --prefix admin-dashboard run build",
-    "backend:dev": "npm --prefix backend run dev",
-    "admin:dev": "npm --prefix admin-dashboard run dev -- --host --port 5173"
+    "build":       "npm --prefix admin-dashboard install && npm --prefix admin-dashboard run build",
+    "dev":         "npm --prefix backend run dev",
+    "dev:admin":   "npm --prefix admin-dashboard run dev -- --host --port 5173",
+    "dev:vercel":  "vercel dev",
+    "deploy":      "vercel --prod",
+    "backend:dev": "npm --prefix backend run dev"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -18,6 +19,6 @@
     "stripe": "^14.6.0"
   },
   "engines": {
-    "node": "24.x"
+    "node": "22.x"
   }
 }

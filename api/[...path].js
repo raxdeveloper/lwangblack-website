@@ -1,14 +1,16 @@
-// ── api/index.js ─────────────────────────────────────────────────────────────
-// Vercel Serverless Proxy → Express Backend (root /api handler)
-// Sub-paths (/api/*) are handled by api/[...path].js (catch-all).
-// All API logic lives in backend/src/. This function proxies requests
-// to the deployed Express backend.
+// ── api/[...path].js ─────────────────────────────────────────────────────────
+// Vercel catch-all serverless proxy → Express Backend
+// Handles ALL /api/* sub-paths (e.g. /api/payments/checkout, /api/orders).
+// Unlike api/index.js (which only catches /api exactly), this catch-all receives
+// every deeper request with req.url set to the ORIGINAL full path.
+// The Express backend at BACKEND_URL hosts all real API logic.
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://api.lwangblack.co';
 const CORS_ORIGIN  = process.env.CORS_ORIGIN  || '*';
 
 module.exports = async (req, res) => {
   // ── CORS headers ──────────────────────────────────────────────────────────
+  // Use specific origin when available (never pair * with credentials)
   const origin = req.headers.origin || '';
   const allowedOrigin = CORS_ORIGIN === '*' ? '*' : (CORS_ORIGIN.split(',').includes(origin) ? origin : CORS_ORIGIN.split(',')[0]);
 
@@ -24,9 +26,9 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // For the root /api, req.url may be "/" or "/api" — forward as-is to backend
-    const targetPath = req.url && req.url !== '/' ? req.url : '/api';
-    const targetUrl  = targetPath.startsWith('http') ? targetPath : `${BACKEND_URL}${targetPath}`;
+    // req.url is the original request URL including the full /api/... path
+    const targetPath = req.url || '/';
+    const targetUrl  = `${BACKEND_URL}${targetPath}`;
 
     const headers = { ...req.headers };
     delete headers.host;
@@ -55,12 +57,14 @@ module.exports = async (req, res) => {
     const contentType = upstream.headers.get('content-type') || '';
     if (contentType) res.setHeader('Content-Type', contentType);
 
+    // Stream body as text (works for JSON, plain text, HTML errors)
     const body = await upstream.text();
     return res.send(body);
   } catch (err) {
-    console.error('[API Proxy] Root handler error:', err.message);
+    console.error('[API Proxy] Error forwarding to backend:', err.message, '→', req.url);
     return res.status(502).json({
       error: 'Backend unavailable. Please try again.',
+      path: req.url,
     });
   }
 };
