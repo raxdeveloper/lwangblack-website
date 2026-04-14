@@ -106,6 +106,7 @@ app.use('/api/logistics', apiLimiter, require('./routes/logistics'));
 app.use('/api/social', apiLimiter, require('./routes/social'));
 app.use('/api/notifications', apiLimiter, require('./routes/notifications'));
 app.use('/api/cart', apiLimiter, require('./routes/cart'));
+app.use('/api/upload', apiLimiter, require('./routes/upload'));
 
 // ── Public checkout config (GDPR-compliant policy links) ────────────────────
 app.get('/api/checkout-config', (req, res) => {
@@ -133,6 +134,9 @@ app.use('/api/*', (req, res) => {
 
 // ── Serve Invoice PDFs ──────────────────────────────────────────────────────
 app.use('/invoices', express.static(path.join(__dirname, '..', 'invoices')));
+
+// ── Serve Uploaded Product Images ───────────────────────────────────────────
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // ── Serve React Admin Dashboard ─────────────────────────────────────────────
 const adminPath = path.resolve(__dirname, '..', '..', 'admin-dashboard', 'dist');
