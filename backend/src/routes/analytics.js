@@ -241,4 +241,38 @@ router.get('/ip-log', requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/analytics/realtime ───────────────────────────────────────────────
+router.get('/realtime', requireAuth, applyCountryFilter, async (req, res) => {
+  try {
+    if (db.isUsingMemory()) {
+      const mem = db.getMemStore();
+      let orders = [...mem.orders];
+      if (req.countryFilter) orders = orders.filter(o => o.country === req.countryFilter);
+
+      return res.json({
+        totalOrders: orders.filter(o => !['cancelled', 'refunded'].includes(o.status)).length,
+        pendingOrders: orders.filter(o => ['pending', 'cod_pending'].includes(o.status)).length
+      });
+    }
+
+    const countryParam = req.countryFilter ? [req.countryFilter] : [];
+    const cWhere = req.countryFilter ? "AND country = $1" : "";
+
+    const data = await db.queryOne(
+      `SELECT
+          COUNT(*) FILTER (WHERE status NOT IN ('cancelled','refunded')) AS total_orders,
+          COUNT(*) FILTER (WHERE status IN ('pending','cod_pending')) AS pending_orders
+       FROM orders WHERE 1=1 ${cWhere}`, countryParam
+    );
+
+    res.json({
+      totalOrders: parseInt(data.total_orders) || 0,
+      pendingOrders: parseInt(data.pending_orders) || 0
+    });
+  } catch (err) {
+    console.error('[Analytics] Realtime error:', err);
+    res.status(500).json({ error: 'Failed to fetch realtime data' });
+  }
+});
+
 module.exports = router;

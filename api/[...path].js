@@ -1,52 +1,64 @@
 // ── api/[...path].js ─────────────────────────────────────────────────────────
-// Vercel catch-all → Express backend (see lib/vercel-proxy-fetch.js).
+// Runs the Express backend DIRECTLY as a Vercel serverless function.
+// No separate backend deployment needed — everything runs on Vercel.
+//
+// How it works:
+//   1. Import the Express app from backend/src/server.js
+//   2. Strip the Vercel-injected query params from the URL
+//   3. Prefix /api/ so Express router matches correctly
+//   4. Let Express handle the request natively
 
-const { normalizeProxyTargetPath } = require('../lib/vercel-proxy-path');
-const { forwardToBackend } = require('../lib/vercel-proxy-fetch');
+'use strict';
 
-const BACKEND_URL = (process.env.BACKEND_URL || 'https://api.lwangblack.co').replace(/\/$/, '');
-const CORS_ORIGIN  = process.env.CORS_ORIGIN  || '*';
+// Load backend env from .env (Vercel injects env vars; dotenv is a no-op if already set)
+require('dotenv').config({ path: require('path').join(__dirname, '..', 'backend', '.env') });
 
-module.exports = async (req, res) => {
-  const origin = req.headers.origin || '';
-  const allowedOrigin = CORS_ORIGIN === '*' ? '*' : (CORS_ORIGIN.split(',').includes(origin) ? origin : CORS_ORIGIN.split(',')[0]);
-
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (allowedOrigin !== '*') {
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+// Lazy-load the Express app — cached across warm invocations
+let _app = null;
+function getApp() {
+  if (!_app) {
+    // Suppress WebSocket server init in serverless (no persistent TCP connections)
+    process.env.DISABLE_WEBSOCKET = 'true';
+    _app = require('../backend/src/server');
   }
+  return _app;
+}
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+// Strip Vercel-injected dynamic segment query params from URL
+function cleanUrl(url) {
+  if (!url) return '/';
+  const idx = url.indexOf('?');
+  if (idx === -1) return url;
 
+  const pathname = url.slice(0, idx);
+  const params   = new URLSearchParams(url.slice(idx + 1));
+
+  // Vercel injects these for catch-all segments — remove them before forwarding
+  ['path', 'path[]', 'slug', 'slug[]'].forEach(k => params.delete(k));
+
+  const qs = params.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
+
+// Ensure the path starts with /api so the Express router matches
+function ensureApiPrefix(pathname) {
+  if (pathname.startsWith('/api')) return pathname;
+  return '/api' + (pathname === '/' ? '' : pathname);
+}
+
+module.exports = (req, res) => {
   try {
-    const targetPath = normalizeProxyTargetPath(req.url || '/');
-    const targetUrl  = `${BACKEND_URL}${targetPath}`;
+    // Reconstruct clean URL with /api prefix
+    const clean   = cleanUrl(req.url || '/');
+    const idx     = clean.indexOf('?');
+    const pathname = idx >= 0 ? clean.slice(0, idx) : clean;
+    const qs       = idx >= 0 ? clean.slice(idx) : '';
+    req.url        = ensureApiPrefix(pathname) + qs;
 
-    let body;
-    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
-      if (Buffer.isBuffer(req.body)) body = req.body;
-      else if (typeof req.body === 'object') body = JSON.stringify(req.body);
-      else body = String(req.body);
-    }
-
-    const upstream = await forwardToBackend(targetUrl, req, body);
-
-    res.status(upstream.status);
-    const contentType = upstream.headers.get('content-type');
-    if (contentType) res.setHeader('Content-Type', contentType);
-
-    const text = await upstream.text();
-    return res.send(text);
+    // Let Express handle it
+    return getApp()(req, res);
   } catch (err) {
-    console.error('[API Proxy]', err.message, err.code || '', '→', req.url);
-    return res.status(502).json({
-      error: 'Backend unavailable. Please try again.',
-      hint: 'Confirm api host is up and BACKEND_URL on Vercel matches your API deployment.',
-      path: req.url,
-    });
+    console.error('[Serverless] Fatal:', err.message);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
   }
 };
