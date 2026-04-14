@@ -460,24 +460,62 @@
     }
 
     // ── Shipping Options ──────────────────────────
-    function renderShippingOptions(countryCode) {
-      const rates = window.getShippingRates(countryCode);
-      shippingRates = rates;
+    async function renderShippingOptions(countryCode) {
       const container = document.getElementById('co-shipping-options');
       if (!container) return;
-      container.innerHTML = ['standard', 'express'].map(type => {
-        const r = rates[type];
-        const priceStr = r.price === 0
+
+      const rates = window.getShippingRates(countryCode);
+      shippingRates = rates;
+
+      // For US, fetch live USPS rates
+      if (countryCode === 'US' && rates.liveRates) {
+        container.innerHTML = '<div style="font-size:0.8rem;color:rgba(255,255,255,0.5);padding:1rem 0;text-align:center;">Fetching live USPS rates…</div>';
+        try {
+          const toZip  = (document.getElementById('co-zip') || {}).value || '';
+          const apiBase = window.LB_API_BASE || '/api';
+          const resp = await fetch(`${apiBase}/logistics/usps/rates`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ toZip, weightLbs: 1 }),
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            // Convert live rates array into a keyed object matching existing structure
+            const liveMap = {};
+            (data.rates || []).forEach((r, i) => {
+              const key = r.serviceCode || `option_${i}`;
+              liveMap[key] = { price: r.price, label: `${r.service} (${r.days})`, carrier: r.carrier, serviceCode: r.serviceCode, demo: r.demo };
+            });
+            if (Object.keys(liveMap).length) {
+              shippingRates = liveMap;
+              if (!shippingRates[selectedShipping]) selectedShipping = Object.keys(liveMap)[0];
+            }
+          }
+        } catch (e) {
+          console.warn('[Checkout] USPS live rates unavailable, using defaults:', e.message);
+        }
+      }
+
+      const options = typeof window.getShippingOptions === 'function'
+        ? window.getShippingOptions(countryCode).filter(o => shippingRates[o.key])
+        : Object.entries(shippingRates).filter(([k]) => k !== 'liveRates').map(([key, o]) => ({ key, ...o }));
+
+      if (!selectedShipping || !shippingRates[selectedShipping]) {
+        selectedShipping = options[0]?.key || 'standard';
+      }
+
+      container.innerHTML = options.map(({ key: type, label, carrier, price }) => {
+        const priceStr = price === 0
           ? '<span style="color:#2e624c">FREE</span>'
-          : `<span>${cartTotals.symbol || '$'}${r.price.toFixed(2)}</span>`;
+          : `<span>${cartTotals.symbol || '$'}${(price || 0).toFixed(2)}</span>`;
         return `
           <div class="co-shipping-option ${type === selectedShipping ? 'selected' : ''}"
                onclick="selectShipping('${type}')">
             <div class="co-shipping-left">
               <div class="co-shipping-radio"></div>
               <div>
-                <div class="co-shipping-label">${r.label}</div>
-                <div class="co-shipping-carrier">${r.carrier}</div>
+                <div class="co-shipping-label">${label}</div>
+                <div class="co-shipping-carrier">${carrier}</div>
               </div>
             </div>
             <div class="co-shipping-price">${priceStr}</div>
@@ -488,8 +526,9 @@
 
     function selectShipping(type) {
       selectedShipping = type;
+      const keys = Object.keys(shippingRates).filter(k => k !== 'liveRates');
       document.querySelectorAll('.co-shipping-option').forEach((el, i) => {
-        el.classList.toggle('selected', ['standard', 'express'][i] === type);
+        el.classList.toggle('selected', keys[i] === type);
       });
       updateSummaryShipping();
     }

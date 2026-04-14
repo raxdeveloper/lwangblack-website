@@ -13,11 +13,14 @@ router.use(requireAuth);
 // ── Supported Carriers ───────────────────────────────────────────────────────
 const CARRIERS = {
   chitchats: { id: 'chitchats', name: 'Chit Chats',     trackUrl: 'https://chitchats.com/tracking/', countries: ['CA'] },
+  usps:      { id: 'usps',      name: 'USPS',           trackUrl: 'https://tools.usps.com/go/TrackConfirmAction?tLabels=', countries: ['US'] },
   auspost:   { id: 'auspost',   name: 'Australia Post', trackUrl: 'https://auspost.com.au/mypost/track/#/details/', countries: ['AU'], internationalFromAU: true },
   nzpost:    { id: 'nzpost',    name: 'NZ Post',        trackUrl: 'https://www.nzpost.co.nz/tools/tracking?trackid=', countries: ['NZ'] },
   japanpost: { id: 'japanpost', name: 'Japan Post',     trackUrl: 'https://trackings.post.japanpost.jp/services/srv/search/direct?reqCodeNo1=', countries: ['JP'] },
   pathao:    { id: 'pathao',    name: 'Pathao',         trackUrl: 'https://pathao.com/np/', countries: ['NP'] },
 };
+
+const uspsService = require('../services/usps');
 // ── GET /api/logistics/carriers ──────────────────────────────────────────────
 router.get('/carriers', (req, res) => {
   const country = (req.query.country || '').toUpperCase();
@@ -119,11 +122,22 @@ router.post('/shipping-cost', async (req, res) => {
 });
 
 // ── POST /api/logistics/rates ───────────────────────────────────────────────
-// Return one country-specific carrier rate.
+// Return carrier rate(s) for a country. For US, fetches live USPS rates.
 router.post('/rates', async (req, res) => {
   try {
-    const country = (req.body.toCountry || '').toUpperCase();
+    const country   = (req.body.toCountry || '').toUpperCase();
+    const toZip     = req.body.toZip     || '';
+    const weightLbs = parseFloat(req.body.weightLbs) || 1;
+    const weightOz  = parseFloat(req.body.weightOz)  || 0;
     const carrierId = getPreferredCarrierId(country);
+
+    // ── USPS: live rates for US ───────────────────────────────────────────────
+    if (carrierId === 'usps') {
+      const rates = await uspsService.getRates({ toZip: toZip || '90210', weightLbs, weightOz });
+      return res.json({ rates, source: 'usps', carrier: 'USPS', to: country });
+    }
+
+    // ── Zone-based rates for other countries ──────────────────────────────────
     let zones;
     if (db.isUsingMemory()) {
       zones = (db.getMemStore().delivery_zones || getDefaultZones()).filter(z => z.country === country);
@@ -132,16 +146,16 @@ router.post('/rates', async (req, res) => {
     }
     if (!zones.length) zones = getDefaultZones().filter(z => z.country === (country || 'AU'));
 
-    const zone = zones[0];
+    const zone      = zones[0];
     const basePrice = zone ? parseFloat(zone.shipping_cost) : 15;
-    const currency = zone?.currency || 'USD';
-    const carrier = CARRIERS[carrierId];
-    const rates = [{
-      carrier: carrier.name,
+    const currency  = zone?.currency || 'USD';
+    const carrier   = CARRIERS[carrierId];
+    const rates     = [{
+      carrier:   carrier.name,
       carrierId: carrier.id,
-      service: carrierId === 'auspost' && country !== 'AU' ? 'International' : 'Standard',
-      days: zone?.estimated_days || '5-10 days',
-      price: basePrice,
+      service:   carrierId === 'auspost' && country !== 'AU' ? 'International' : 'Standard',
+      days:      zone?.estimated_days || '5-10 days',
+      price:     basePrice,
       currency,
     }];
     res.json({ rates, source: 'country-logistics', from: 'AU', to: country || 'AU' });
@@ -229,8 +243,13 @@ router.post('/track', async (req, res) => {
 
     let trackingData = null;
 
-    // Try Shippo universal tracking
-    if (config.shippo.apiKey) {
+    // USPS tracking for USPS numbers
+    if (carrierId === 'usps' || /^[0-9]{20,22}$/.test(trackingNumber.replace(/\s/g, ''))) {
+      trackingData = await uspsService.trackShipment(trackingNumber);
+    }
+
+    // Shippo universal tracking fallback for other carriers
+    if (!trackingData && config.shippo.apiKey) {
       try {
         const carrier = carrierId || 'auspost';
         const trackRes = await fetch(`https://api.goshippo.com/tracks/${carrier}/${trackingNumber}`, {
@@ -241,7 +260,7 @@ router.post('/track', async (req, res) => {
           if (data.tracking_status) {
             trackingData = {
               number: trackingNumber,
-              carrier: data.carrier || carrier,
+              carrier: CARRIERS[carrier]?.name || data.carrier || carrier,
               status: data.tracking_status.status || 'UNKNOWN',
               description: data.tracking_status.status_details || '',
               location: data.tracking_status.location?.city || '',
@@ -259,7 +278,7 @@ router.post('/track', async (req, res) => {
       }
     }
 
-    // Demo fallback
+    // Generic demo fallback
     if (!trackingData) {
       trackingData = {
         number: trackingNumber,
@@ -281,6 +300,141 @@ router.post('/track', async (req, res) => {
   } catch (err) {
     console.error('[Logistics] Track error:', err);
     res.status(500).json({ error: 'Tracking failed' });
+  }
+});
+
+// ── POST /api/logistics/usps/rates ───────────────────────────────────────────
+// Get real-time USPS rate options for a US shipment (admin use).
+router.post('/usps/rates', async (req, res) => {
+  try {
+    const { toZip, fromZip, weightLbs, weightOz } = req.body;
+    if (!toZip) return res.status(400).json({ error: 'toZip required' });
+    const rates = await uspsService.getRates({ toZip, fromZip, weightLbs, weightOz });
+    res.json({ rates, configured: uspsService.isConfigured() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/logistics/usps/label ───────────────────────────────────────────
+// Generate a USPS shipping label for an order (admin only).
+router.post('/usps/label', requireRole('owner', 'manager'), async (req, res) => {
+  try {
+    const { orderId, serviceType, fromAddress, toAddress, weightLbs, weightOz } = req.body;
+    if (!orderId) return res.status(400).json({ error: 'orderId required' });
+
+    // Load order if addresses not provided
+    let resolvedTo = toAddress;
+    let resolvedFrom = fromAddress || {
+      name:   'Lwang Black',
+      street: process.env.USPS_FROM_STREET || '135 King St',
+      city:   process.env.USPS_FROM_CITY   || 'New York',
+      state:  process.env.USPS_FROM_STATE  || 'NY',
+      zip:    process.env.USPS_FROM_ZIP    || '10001',
+      phone:  process.env.USPS_FROM_PHONE  || '',
+    };
+
+    if (!resolvedTo) {
+      let order;
+      if (db.isUsingMemory()) {
+        order = db.getMemStore().orders.find(o => o.id === orderId);
+      } else {
+        order = await db.queryOne(
+          `SELECT o.*, c.fname, c.lname, c.phone, c.address
+           FROM orders o LEFT JOIN customers c ON o.customer_id = c.id WHERE o.id = $1`, [orderId]
+        );
+      }
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      resolvedTo = {
+        name:   `${order.fname || ''} ${order.lname || ''}`.trim() || 'Customer',
+        street: order.address || '',
+        city:   order.city    || '',
+        state:  order.state   || '',
+        zip:    order.zip     || '',
+        phone:  order.phone   || '',
+      };
+    }
+
+    const labelResult = await uspsService.generateLabel({
+      fromAddress: resolvedFrom,
+      toAddress:   resolvedTo,
+      weightLbs:   parseFloat(weightLbs) || 1,
+      weightOz:    parseFloat(weightOz)  || 0,
+      serviceType: serviceType || 'PRIORITY',
+      orderId,
+    });
+
+    // Persist label + tracking to DB
+    const tn = labelResult.trackingNumber;
+    try {
+      await db.query(
+        `UPDATE orders SET tracking = $1, carrier = 'USPS', shipping_service = $2, status = 'shipped', updated_at = NOW() WHERE id = $3`,
+        [tn, serviceType || 'PRIORITY', orderId]
+      );
+      if (!db.isUsingMemory()) {
+        await db.query(
+          `INSERT INTO logistics_labels (order_id, carrier, tracking_number, service_type, label_base64, postage, created_at)
+           VALUES ($1, 'USPS', $2, $3, $4, $5, NOW())
+           ON CONFLICT (order_id) DO UPDATE SET tracking_number=$2, service_type=$3, label_base64=$4, postage=$5, created_at=NOW()`,
+          [orderId, tn, serviceType || 'PRIORITY', labelResult.labelBase64, labelResult.postage]
+        );
+      }
+    } catch (dbErr) {
+      console.error('[Logistics] Label DB save error:', dbErr.message);
+    }
+
+    // Send shipping notification
+    (async () => {
+      try {
+        let orderData, custData;
+        if (db.isUsingMemory()) {
+          const mem = db.getMemStore();
+          orderData = mem.orders.find(o => o.id === orderId);
+          custData  = orderData ? mem.customers.find(c => c.id === orderData.customer_id) : null;
+        } else {
+          const row = await db.queryOne(
+            `SELECT o.*, c.fname, c.lname, c.email AS customer_email, c.phone AS customer_phone
+             FROM orders o LEFT JOIN customers c ON o.customer_id = c.id WHERE o.id = $1`, [orderId]
+          );
+          if (row) { orderData = row; custData = { fname: row.fname, lname: row.lname, email: row.customer_email, phone: row.customer_phone }; }
+        }
+        if (orderData && custData) {
+          await sendShippingUpdate(orderData, custData, tn, 'USPS');
+        }
+      } catch (e) { console.error('[Logistics] USPS label notification error:', e.message); }
+    })();
+
+    broadcast({ type: 'order:shipped', data: { orderId, trackingNumber: tn, carrier: 'USPS' } });
+
+    await auditLog(db, {
+      userId: req.user.id, username: req.user.username,
+      action: 'usps_label_generated', entityType: 'logistics', entityId: orderId,
+      details: { trackingNumber: tn, serviceType, postage: labelResult.postage, demo: labelResult.demo }, ip: req.ip,
+    }).catch(() => {});
+
+    res.json({
+      success:        true,
+      trackingNumber: tn,
+      labelBase64:    labelResult.labelBase64,
+      postage:        labelResult.postage,
+      serviceType:    labelResult.serviceType,
+      trackUrl:       `${CARRIERS.usps.trackUrl}${tn}`,
+      demo:           labelResult.demo,
+      message:        labelResult.message,
+    });
+  } catch (err) {
+    console.error('[Logistics] USPS label error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/logistics/usps/validate-address ─────────────────────────────────
+router.post('/usps/validate-address', async (req, res) => {
+  try {
+    const result = await uspsService.validateAddress(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -383,6 +537,7 @@ function getPreferredCarrierId(country) {
   const c = (country || '').toUpperCase();
   if (c === 'NP') return 'pathao';
   if (c === 'CA') return 'chitchats';
+  if (c === 'US') return 'usps';
   if (c === 'NZ') return 'nzpost';
   if (c === 'JP') return 'japanpost';
   return 'auspost'; // AU + all remaining international countries
@@ -395,7 +550,7 @@ function getDefaultZones() {
     { id: 'z-np-ktm', name: 'Kathmandu Valley',       country: 'NP', region: 'Kathmandu',  shipping_cost: 0,     currency: 'NPR', free_above: null, estimated_days: '1-2 days', is_active: true },
     { id: 'z-np-oth', name: 'Nepal - Outside Valley',  country: 'NP', region: 'Other',      shipping_cost: 200,   currency: 'NPR', free_above: 5000, estimated_days: '3-5 days', is_active: true },
     { id: 'z-au',     name: 'Australia',                country: 'AU', region: null,          shipping_cost: 14.99, currency: 'AUD', free_above: 75,   estimated_days: '5-8 days', is_active: true },
-    { id: 'z-us',     name: 'United States',            country: 'US', region: null,          shipping_cost: 15.00, currency: 'USD', free_above: 60,   estimated_days: '5-8 days', is_active: true },
+    { id: 'z-us',     name: 'United States (USPS)',      country: 'US', region: null,          shipping_cost: 8.70,  currency: 'USD', free_above: 60,   estimated_days: '2-3 days (USPS Priority)', is_active: true },
     { id: 'z-gb',     name: 'United Kingdom',           country: 'GB', region: null,          shipping_cost: 11.99, currency: 'GBP', free_above: 50,   estimated_days: '5-10 days', is_active: true },
     { id: 'z-ca',     name: 'Canada',                   country: 'CA', region: null,          shipping_cost: 15.99, currency: 'CAD', free_above: 60,   estimated_days: '5-10 days', is_active: true },
     { id: 'z-nz',     name: 'New Zealand',              country: 'NZ', region: null,          shipping_cost: 12.99, currency: 'NZD', free_above: 60,   estimated_days: '5-10 days', is_active: true },

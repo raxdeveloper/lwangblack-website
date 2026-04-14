@@ -708,8 +708,11 @@ const COUNTRY_SHIPPING_RATES = {
     express:  { price: 29.99, label: 'Australia Post Express (2–3 days)', carrier: 'Australia Post' }
   },
   US: {
-    standard: { price: 12.99, label: 'Australia Post International (7–10 days)', carrier: 'Australia Post' },
-    express:  { price: 34.99, label: 'Australia Post Priority International (3–5 days)', carrier: 'Australia Post' }
+    firstClass: { price: 4.50,  label: 'USPS First-Class Mail (1–5 days)',        carrier: 'USPS', serviceCode: 'FIRST_CLASS' },
+    standard:   { price: 8.70,  label: 'USPS Priority Mail (2–3 days)',            carrier: 'USPS', serviceCode: 'PRIORITY' },
+    express:    { price: 26.35, label: 'USPS Priority Mail Express (1–2 days)',    carrier: 'USPS', serviceCode: 'PRIORITY_EXPRESS' },
+    ground:     { price: 7.25,  label: 'USPS Retail Ground (2–8 days)',            carrier: 'USPS', serviceCode: 'RETAIL_GROUND' },
+    liveRates:  true // flag: checkout.html will fetch live rates from /api/logistics/usps/rates
   },
   GB: {
     standard: { price: 11.99, label: 'Australia Post International (6–9 days)', carrier: 'Australia Post' },
@@ -775,7 +778,21 @@ function isProductAvailable(productId, countryCode) {
 }
 
 function getShippingRates(countryCode) {
-  return COUNTRY_SHIPPING_RATES[countryCode] || COUNTRY_SHIPPING_RATES.DEFAULT;
+  const rates = COUNTRY_SHIPPING_RATES[countryCode] || COUNTRY_SHIPPING_RATES.DEFAULT;
+  // For US, return the USPS options as an array for the checkout display
+  if (countryCode === 'US') {
+    const { liveRates, ...options } = rates;
+    return { ...options, liveRates: true };
+  }
+  return rates;
+}
+
+// Returns a flat array of shipping options for a country (used in checkout dropdowns).
+function getShippingOptions(countryCode) {
+  const rates = COUNTRY_SHIPPING_RATES[countryCode] || COUNTRY_SHIPPING_RATES.DEFAULT;
+  return Object.entries(rates)
+    .filter(([key]) => key !== 'liveRates')
+    .map(([key, opt]) => ({ key, ...opt }));
 }
 
 function formatPrice(price) {
@@ -789,6 +806,7 @@ window.COUNTRY_NAMES = COUNTRY_NAMES;
 window.getProductPrice = getProductPrice;
 window.isProductAvailable = isProductAvailable;
 window.getShippingRates = getShippingRates;
+window.getShippingOptions = getShippingOptions;
 window.formatPrice = formatPrice;
 
 // Variant image preloading removed for performance

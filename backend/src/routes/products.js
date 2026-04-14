@@ -110,6 +110,10 @@ router.post('/', requireAuth, requireRole('owner', 'manager'), async (req, res) 
     await cacheFlush('products:*');
     broadcast({ type: 'product:created', data: { productId, name } });
 
+    if ((stock || 0) <= 0) {
+      createInventoryAlert(productId, name, 'out_of_stock', 10, 0).catch(() => {});
+    }
+
     await auditLog(db, {
       userId: req.user.id, username: req.user.username,
       action: 'product_created', entityType: 'product', entityId: productId, ip: req.ip,
@@ -210,5 +214,168 @@ router.delete('/:id', requireAuth, requireRole('owner'), async (req, res) => {
     res.status(500).json({ error: 'Failed to archive product' });
   }
 });
+
+// ── PATCH /api/products/:id/stock (admin) ────────────────────────────────────
+// Adjust stock quantity (increment/decrement/set). Also checks low-stock threshold.
+router.patch('/:id/stock', requireAuth, requireRole('owner', 'manager'), async (req, res) => {
+  try {
+    const { adjustment, set, reason } = req.body; // adjustment: ±N, set: absolute value
+    let product, newStock;
+
+    if (db.isUsingMemory()) {
+      const mem = db.getMemStore();
+      product = mem.products.find(p => p.id === req.params.id);
+      if (!product) return res.status(404).json({ error: 'Product not found' });
+      newStock = set !== undefined ? parseInt(set) : (product.stock || 0) + (parseInt(adjustment) || 0);
+      newStock = Math.max(0, newStock);
+      product.stock = newStock;
+      product.updated_at = new Date();
+    } else {
+      if (set !== undefined) {
+        await db.query('UPDATE products SET stock = $1, updated_at = NOW() WHERE id = $2', [Math.max(0, parseInt(set)), req.params.id]);
+      } else {
+        await db.query(
+          'UPDATE products SET stock = GREATEST(0, stock + $1), updated_at = NOW() WHERE id = $2',
+          [parseInt(adjustment) || 0, req.params.id]
+        );
+      }
+      product = await db.queryOne('SELECT id, name, stock, low_stock_threshold FROM products WHERE id = $1', [req.params.id]);
+      if (!product) return res.status(404).json({ error: 'Product not found' });
+      newStock = product.stock;
+    }
+
+    await cacheFlush('products:*');
+    broadcast({ type: 'product:stock_updated', data: { productId: req.params.id, stock: newStock } });
+
+    // ── Check low-stock / out-of-stock thresholds ─────────────────────────────
+    const threshold = product.low_stock_threshold || 10;
+    const alertType = newStock <= 0 ? 'out_of_stock' : newStock < threshold ? 'low_stock' : null;
+    if (alertType) {
+      try {
+        await createInventoryAlert(req.params.id, product.name, alertType, threshold, newStock);
+      } catch (alertErr) {
+        console.warn('[Products] Alert creation error:', alertErr.message);
+      }
+    }
+
+    await auditLog(db, {
+      userId: req.user.id, username: req.user.username,
+      action: 'stock_adjusted', entityType: 'product', entityId: req.params.id,
+      details: { adjustment, set, newStock, reason }, ip: req.ip,
+    });
+
+    res.json({ success: true, productId: req.params.id, stock: newStock, alert: alertType });
+  } catch (err) {
+    console.error('[Products] Stock adjust error:', err);
+    res.status(500).json({ error: 'Failed to adjust stock' });
+  }
+});
+
+// ── GET /api/products/inventory/alerts ───────────────────────────────────────
+router.get('/inventory/alerts', requireAuth, requireRole('owner', 'manager'), async (req, res) => {
+  try {
+    let alerts = [];
+    if (!db.isUsingMemory()) {
+      alerts = await db.queryAll(
+        `SELECT ia.*, p.name as product_name, p.stock as current_stock
+         FROM inventory_alerts ia
+         LEFT JOIN products p ON ia.product_id = p.id
+         WHERE ia.is_resolved = false
+         ORDER BY ia.created_at DESC LIMIT 100`
+      ).catch(() => []);
+    }
+
+    // Fallback: scan in-memory products for low stock
+    if (db.isUsingMemory() || !alerts.length) {
+      const mem = db.getMemStore();
+      const products = (mem.products || []).filter(p => p.status !== 'archived');
+      alerts = products
+        .filter(p => (p.stock || 0) < (p.low_stock_threshold || 10))
+        .map(p => ({
+          id:           p.id,
+          product_id:   p.id,
+          product_name: p.name,
+          alert_type:   (p.stock || 0) <= 0 ? 'out_of_stock' : 'low_stock',
+          threshold:    p.low_stock_threshold || 10,
+          current_qty:  p.stock || 0,
+          is_resolved:  false,
+          created_at:   p.updated_at || new Date().toISOString(),
+        }));
+    }
+
+    res.json({ alerts, count: alerts.length });
+  } catch (err) {
+    console.error('[Products] Alerts error:', err);
+    res.status(500).json({ error: 'Failed to fetch inventory alerts' });
+  }
+});
+
+// ── PATCH /api/products/inventory/alerts/:id/resolve ─────────────────────────
+router.patch('/inventory/alerts/:id/resolve', requireAuth, requireRole('owner', 'manager'), async (req, res) => {
+  try {
+    if (!db.isUsingMemory()) {
+      await db.query(
+        `UPDATE inventory_alerts SET is_resolved = true, resolved_at = NOW() WHERE id = $1`,
+        [req.params.id]
+      ).catch(() => {});
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to resolve alert' });
+  }
+});
+
+// ── GET /api/products/inventory/summary ──────────────────────────────────────
+router.get('/inventory/summary', requireAuth, requireRole('owner', 'manager'), async (req, res) => {
+  try {
+    let products = [];
+    if (db.isUsingMemory()) {
+      products = (db.getMemStore().products || []).filter(p => p.status !== 'archived');
+    } else {
+      products = await db.queryAll(
+        `SELECT id, name, category, stock, low_stock_threshold, sku, status FROM products WHERE status != 'archived' ORDER BY stock ASC`
+      ).catch(() => []);
+    }
+
+    const outOfStock = products.filter(p => (p.stock || 0) <= 0);
+    const lowStock   = products.filter(p => (p.stock || 0) > 0 && (p.stock || 0) < (p.low_stock_threshold || 10));
+    const inStock    = products.filter(p => (p.stock || 0) >= (p.low_stock_threshold || 10));
+    const totalValue = products.reduce((sum, p) => {
+      const price = typeof p.prices === 'object' ? (p.prices?.DEFAULT?.amount || p.prices?.US?.amount || p.price || 0) : (p.price || 0);
+      return sum + price * (p.stock || 0);
+    }, 0);
+
+    res.json({
+      total:       products.length,
+      outOfStock:  outOfStock.length,
+      lowStock:    lowStock.length,
+      inStock:     inStock.length,
+      totalValue:  Math.round(totalValue * 100) / 100,
+      breakdown:   products.map(p => ({
+        id:        p.id,
+        name:      p.name,
+        sku:       p.sku,
+        category:  p.category,
+        stock:     p.stock || 0,
+        threshold: p.low_stock_threshold || 10,
+        status:    (p.stock || 0) <= 0 ? 'out_of_stock' : (p.stock || 0) < (p.low_stock_threshold || 10) ? 'low_stock' : 'in_stock',
+      })),
+    });
+  } catch (err) {
+    console.error('[Products] Inventory summary error:', err);
+    res.status(500).json({ error: 'Failed to fetch inventory summary' });
+  }
+});
+
+// ── Helper: create or upsert inventory alert ─────────────────────────────────
+async function createInventoryAlert(productId, productName, alertType, threshold, currentQty) {
+  if (db.isUsingMemory()) return; // in-memory: alerts are computed on-the-fly
+  await db.query(
+    `INSERT INTO inventory_alerts (product_id, product_name, alert_type, threshold, current_qty, notified_at)
+     VALUES ($1, $2, $3, $4, $5, NOW())
+     ON CONFLICT DO NOTHING`,
+    [productId, productName, alertType, threshold, currentQty]
+  );
+}
 
 module.exports = router;

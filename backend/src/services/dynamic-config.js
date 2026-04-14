@@ -100,6 +100,15 @@ async function getGatewayConfig(gateway) {
         enabled:    isEnabled(s, 'nabil', 'NABIL_MERCHANT_ID'),
       };
 
+    case 'usps':
+      return {
+        userId:   s.usps_user_id  || env.USPS_USER_ID  || '',
+        password: s.usps_password || env.USPS_PASSWORD  || '',
+        testMode: (s.usps_test_mode || env.USPS_TEST_MODE || 'true') === 'true',
+        fromZip:  s.usps_from_zip || env.USPS_FROM_ZIP  || '10001',
+        enabled:  isEnabled(s, 'usps', 'USPS_USER_ID'),
+      };
+
     case 'chitchats':
       return {
         apiKey:  s.chitchats_api_key || env.CHITCHATS_API_KEY || '',
@@ -192,6 +201,12 @@ async function getGatewayStatus() {
       hasMerchantId: present(s.nabil_merchant_id || env.NABIL_MERCHANT_ID),
       hasSecret:     present(s.nabil_secret_key || env.NABIL_SECRET_KEY),
     },
+    usps: {
+      enabled:    isEnabled(s, 'usps', 'USPS_USER_ID'),
+      hasUserId:  present(s.usps_user_id || env.USPS_USER_ID),
+      userIdHint: mask(s.usps_user_id || env.USPS_USER_ID),
+      testMode:   (s.usps_test_mode || env.USPS_TEST_MODE || 'true') === 'true',
+    },
     chitchats: {
       enabled: isEnabled(s, 'chitchats', 'CHITCHATS_API_KEY'),
       hasKey:  present(s.chitchats_api_key || env.CHITCHATS_API_KEY),
@@ -242,6 +257,7 @@ function isEnabled(settings, key, envKey) {
     case 'khalti':   return !!(settings.khalti_secret_key   || env[envKey]);
     case 'esewa':    return !!(settings.esewa_merchant_id   || env[envKey]);
     case 'nabil':    return !!(settings.nabil_merchant_id   || env[envKey]);
+    case 'usps':     return !!(settings.usps_user_id         || env[envKey]);
     case 'chitchats':return !!(settings.chitchats_api_key   || env[envKey]);
     case 'auspost':  return !!(settings.auspost_api_key     || env[envKey]);
     case 'nzpost':   return !!(settings.nzpost_api_key      || env[envKey]);
