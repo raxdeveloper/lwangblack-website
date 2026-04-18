@@ -727,8 +727,8 @@ const COUNTRY_SHIPPING_RATES = {
     express:  { price: 27.99, label: 'NZ Post Express (2–3 days)', carrier: 'NZ Post' }
   },
   JP: {
-    standard: { price: 18.00, label: 'Japan Post Standard (7–12 days)', carrier: 'Japan Post' },
-    express:  { price: 38.00, label: 'Japan Post Express (4–7 days)', carrier: 'Japan Post' }
+    standard: { price: 890, label: 'Japan Post 標準 (7–12日)', carrier: 'Japan Post' },
+    express:  { price: 1980, label: 'Japan Post 速達 (4–7日)', carrier: 'Japan Post' },
   },
   DEFAULT: {
     standard: { price: 19.99, label: 'Australia Post International (8–14 days)', carrier: 'Australia Post' },
@@ -753,7 +753,23 @@ function getProductPrice(productId, countryCode) {
     if (!product.allowed_regions.includes(countryCode)) return null;
   }
   const prices = product.prices;
-  let basePrice = prices[countryCode] || prices.DEFAULT || null;
+  let basePrice = prices[countryCode] || null;
+
+  // Japan: use explicit JPY when present; otherwise derive from USD list price (Stripe charges in whole yen).
+  if (!basePrice && countryCode === 'JP') {
+    const us = prices.US || prices.DEFAULT;
+    if (us && typeof us.amount === 'number') {
+      const jpy = Math.max(50, Math.round(us.amount * 155));
+      return {
+        amount: jpy,
+        currency: 'JPY',
+        symbol: '¥',
+        display: `¥${jpy.toLocaleString('ja-JP')}`,
+      };
+    }
+  }
+
+  if (!basePrice) basePrice = prices.DEFAULT || null;
 
   if (window.AUCurrencyState && window.AUCurrencyState.active && basePrice) {
     const convertedAmount = basePrice.amount * window.AUCurrencyState.rate;

@@ -190,10 +190,19 @@
       if (paymentMethod === 'stripe' || window.selectedPayment === 'card') {
         const currencies = { AU: 'aud', US: 'usd', CA: 'cad', JP: 'jpy', NZ: 'nzd', GB: 'gbp', NP: 'usd' };
         const cur = currencies[region] || 'usd';
+        let stripeAmount = totalAmount;
+        if (cur === 'jpy') {
+          stripeAmount = Math.round(Number(totalAmount) || 0);
+          if (stripeAmount < 50) {
+            showErr('Card payments require a minimum of ¥50 for Japan (Stripe). Increase your cart or tip.');
+            resetBtn();
+            return;
+          }
+        }
         const intentRes = await fetch(`${apiBase()}/checkout/stripe-intent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: totalAmount, currency: cur, region }),
+          body: JSON.stringify({ amount: stripeAmount, currency: cur, region }),
         });
         const intentData = await intentRes.json();
         if (!intentRes.ok) throw new Error(intentData.error || 'Stripe not configured');
@@ -216,11 +225,18 @@
           return;
         }
 
-        const orderPayload = {
+        let orderPayload = {
           ...basePayload,
           paymentMethod: 'stripe',
           stripePaymentIntentId: result.paymentIntent?.id,
         };
+        if (cur === 'jpy') {
+          const fp =
+            window.lwbCart && typeof window.lwbCart.formatPrice === 'function'
+              ? window.lwbCart.formatPrice(stripeAmount, region)
+              : `¥${stripeAmount.toLocaleString('ja-JP')}`;
+          orderPayload = { ...orderPayload, totalAmount: stripeAmount, totalDisplay: fp, total: fp };
+        }
         const ord = await postOrder(orderPayload);
         if (!ord.success) throw new Error(ord.error || 'Could not save order');
         window.LB_CART.clear();

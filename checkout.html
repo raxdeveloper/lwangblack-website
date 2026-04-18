@@ -383,6 +383,23 @@
     let shippingRates = {};
     let appliedDiscount = { code: null, amount: 0 };
 
+    function coRegionCode() {
+      return typeof LB_REGION !== 'undefined' && LB_REGION.get ? LB_REGION.get() : 'NP';
+    }
+    function coFracDigits(region) {
+      const r = region || coRegionCode();
+      return r === 'JP' || r === 'NP' ? 0 : 2;
+    }
+    function coFormatMoney(amount, region) {
+      const r = region || coRegionCode();
+      const n = Number(amount) || 0;
+      const fd = coFracDigits(r);
+      return n.toLocaleString(r === 'JP' ? 'ja-JP' : undefined, {
+        minimumFractionDigits: fd,
+        maximumFractionDigits: fd,
+      });
+    }
+
     // ── Init ──────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
       const banner = document.getElementById('lb-region-banner');
@@ -532,9 +549,11 @@
       }
 
       container.innerHTML = options.map(({ key: type, label, carrier, price }) => {
+        const reg = coRegionCode();
+        const sym = cartTotals.symbol || (reg === 'JP' ? '¥' : '$');
         const priceStr = price === 0
           ? '<span style="color:#2e624c">FREE</span>'
-          : `<span>${cartTotals.symbol || '$'}${(price || 0).toFixed(2)}</span>`;
+          : `<span>${sym}${coFormatMoney(price || 0, reg)}</span>`;
         return `
           <div class="co-shipping-option ${type === selectedShipping ? 'selected' : ''}"
                onclick="selectShipping('${type}')">
@@ -569,13 +588,14 @@
       if (!cartItems.length) {
         itemsEl.innerHTML = `<p style="font-family:'Inter',sans-serif;font-size:0.75rem;color:rgba(255,255,255,0.4);text-align:center;padding:1rem 0;">Cart is empty — <a href="shop.html" style="color:#fff;">add products</a></p>`;
       } else {
+        const sumReg = coRegionCode();
         itemsEl.innerHTML = cartItems.map(item => `
           <div class="co-summary-item">
             <img src="${item.image}" alt="${item.name}" onerror="this.src='images/product-hero-500g.jpg'"/>
             <div class="co-summary-item-name">${item.name}
               <div class="co-summary-item-qty">Qty: ${item.qty}</div>
             </div>
-            <div class="co-summary-item-price">${item.symbol}${(item.price * item.qty).toLocaleString(undefined, {minimumFractionDigits: item.price < 100 ? 2 : 0, maximumFractionDigits: item.price < 100 ? 2 : 0})}</div>
+            <div class="co-summary-item-price">${item.symbol}${coFormatMoney(item.price * item.qty, sumReg)}</div>
           </div>`).join('');
       }
       document.getElementById('co-sum-sub').textContent = cartTotals.display;
@@ -590,9 +610,11 @@
       const totalEl = document.getElementById('co-sum-total');
       const subtotal = cartTotals.subtotal || 0;
       const sym = cartTotals.symbol || '$';
-      shipEl.textContent = rate.price === 0 ? 'FREE' : `${sym}${rate.price.toFixed(2)}`;
-      const total = subtotal + rate.price;
-      totalEl.textContent = `${sym}${total.toLocaleString(undefined, {minimumFractionDigits: total < 100 ? 2 : 0, maximumFractionDigits: total < 100 ? 2 : 0})}`;
+      const reg = coRegionCode();
+      shipEl.textContent = rate.price === 0 ? 'FREE' : `${sym}${coFormatMoney(rate.price, reg)}`;
+      const tip = typeof tipAmount === 'number' ? tipAmount : 0;
+      const total = subtotal + rate.price + tip;
+      totalEl.textContent = `${sym}${coFormatMoney(total, reg)}`;
     }
 
     // ── Payment config ────────────────────────────────────────────────────────
@@ -624,7 +646,9 @@
 
     async function loadPublicSettings() {
       try {
-        const r = await fetch('/api/settings/public');
+        const base = (window.LWB_API_BASE || '').replace(/\/$/, '');
+        const url = base ? `${base}/settings/public` : '/api/settings/public';
+        const r = await fetch(url);
         if (r.ok) {
           const d = await r.json();
           if (d.stripePublishableKey && typeof Stripe !== 'undefined') {
@@ -807,7 +831,13 @@
       document.querySelectorAll('.co-tip-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(`tip-${pct||0}`)?.classList.add('active');
       const base = (cartTotals.subtotal || 0);
-      tipAmount = pct > 0 ? parseFloat((base * pct / 100).toFixed(2)) : 0;
+      const fd = coFracDigits();
+      tipAmount =
+        pct > 0
+          ? fd === 0
+            ? Math.round((base * pct) / 100)
+            : parseFloat(((base * pct) / 100).toFixed(2))
+          : 0;
       document.getElementById('tip-custom').value = '';
       document.getElementById('tip-thanks').style.display = tipAmount > 0 ? 'block' : 'none';
       updateSummaryTotal();
@@ -819,13 +849,16 @@
 
     function adjustTip(dir) {
       const inp = document.getElementById('tip-custom');
+      const fd = coFracDigits();
       let v = parseFloat(inp.value || 0) + dir;
       if (v < 0) v = 0;
-      inp.value = v.toFixed(2);
+      inp.value = fd === 0 ? String(Math.round(v)) : v.toFixed(2);
     }
 
     function addCustomTip() {
-      const v = parseFloat(document.getElementById('tip-custom').value || 0);
+      const fd = coFracDigits();
+      const raw = parseFloat(document.getElementById('tip-custom').value || 0);
+      const v = fd === 0 ? Math.round(raw) : raw;
       tipAmount = v > 0 ? v : 0;
       document.getElementById('tip-thanks').style.display = tipAmount > 0 ? 'block' : 'none';
       document.querySelectorAll('.co-tip-btn').forEach(b => b.classList.remove('active'));
@@ -835,9 +868,11 @@
     function updateTipAmounts() {
       const base = cartTotals.subtotal || 0;
       const sym = cartTotals.symbol || '$';
+      const reg = coRegionCode();
       [5,10,20].forEach(p => {
         const el = document.getElementById(`tip-${p}-amt`);
-        if (el) el.textContent = `${sym}${(base*p/100).toFixed(2)}`;
+        const amt = coFracDigits(reg) === 0 ? Math.round((base * p) / 100) : (base * p) / 100;
+        if (el) el.textContent = `${sym}${coFormatMoney(amt, reg)}`;
       });
     }
 
@@ -848,7 +883,8 @@
       const sym = cartTotals.symbol || '$';
       const t = subtotal + rate.price + tipAmount;
       const totalEl = document.getElementById('co-sum-total');
-      if (totalEl) totalEl.textContent = `${sym}${t.toFixed(2)}`;
+      const reg = coRegionCode();
+      if (totalEl) totalEl.textContent = `${sym}${coFormatMoney(t, reg)}`;
     }
 
     // ── submitPayment — handles both Stripe Elements and redirect gateways ───
@@ -1025,19 +1061,26 @@
       const msgEl = document.getElementById('co-promo-msg');
       if (!code) { if (msgEl) msgEl.textContent = 'Enter a promo code'; return; }
       try {
-        const res = await fetch('/api/discounts/validate', {
+        const discBase = (window.LWB_API_BASE || '').replace(/\/$/, '');
+        const discUrl = discBase ? `${discBase}/discounts/validate` : '/api/discounts/validate';
+        const res = await fetch(discUrl, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code, orderTotal: cartTotals.subtotal || 0 })
         });
         const data = await res.json();
         if (data.valid) {
           appliedDiscount = { code: code.toUpperCase(), amount: data.discountAmount || 0 };
-          if (msgEl) { msgEl.style.color = '#2e624c'; msgEl.textContent = `✓ ${code.toUpperCase()}: -${data.type === 'percent' ? data.value + '%' : cartTotals.symbol + data.discountAmount.toFixed(2)} applied!`; }
+          const reg = coRegionCode();
+          const discFmt =
+            data.type === 'percent'
+              ? data.value + '%'
+              : cartTotals.symbol + coFormatMoney(data.discountAmount || 0, reg);
+          if (msgEl) { msgEl.style.color = '#2e624c'; msgEl.textContent = `✓ ${code.toUpperCase()}: -${discFmt} applied!`; }
           const totalEl = document.getElementById('co-sum-total');
           if (totalEl) {
             const rates = window.getShippingRates?.(LB_REGION.get()) || {};
             const rate = rates[selectedShipping] || { price: 0 };
-            totalEl.textContent = `${cartTotals.symbol}${(data.newTotal + rate.price).toFixed(2)}`;
+            totalEl.textContent = `${cartTotals.symbol}${coFormatMoney((data.newTotal || 0) + rate.price, reg)}`;
           }
         } else {
           appliedDiscount = { code: null, amount: 0 };

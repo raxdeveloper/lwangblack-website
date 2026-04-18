@@ -58,6 +58,9 @@ function formatPrice(amount, region) {
   const r = region || getLwbRegion();
   const c = CURRENCY[r] || CURRENCY.NP;
   const n = Number(amount) || 0;
+  if (c.decimals === 0) {
+    return `${c.symbol}${n.toLocaleString(r === 'JP' ? 'ja-JP' : undefined)}`;
+  }
   return `${c.symbol}${n.toFixed(c.decimals)}`;
 }
 
@@ -305,11 +308,22 @@ const LB_CART = {
   getTotals() {
     const items = this.load();
     if (!items.length) {
-      return { count: 0, subtotal: 0, currency: 'USD', symbol: '$', display: '$0.00' };
+      const r = getLwbRegion();
+      const meta = CURRENCY[r] || CURRENCY.NP;
+      return {
+        count: 0,
+        subtotal: 0,
+        currency: meta.code,
+        symbol: meta.symbol,
+        display: formatPrice(0, r),
+      };
     }
     const subtotal = items.reduce((s, i) => s + Number(i.price) * Number(i.qty), 0);
     const first = items[0];
-    const region = first.region || getLwbRegion();
+    const region =
+      (typeof window.LB_REGION !== 'undefined' && typeof LB_REGION.get === 'function' && LB_REGION.get()) ||
+      first.region ||
+      getLwbRegion();
     const meta = CURRENCY[region] || CURRENCY.NP;
     return {
       count: items.reduce((s, i) => s + i.qty, 0),
@@ -357,12 +371,20 @@ const LB_CART = {
 
     body.innerHTML = items
       .map(
-        (item) => `
+        (item) => {
+          const ir = item.region || getLwbRegion();
+          const dec = (CURRENCY[ir] || CURRENCY.NP).decimals;
+          const line = Number(item.price) * Number(item.qty);
+          const lineStr = line.toLocaleString(ir === 'JP' ? 'ja-JP' : undefined, {
+            minimumFractionDigits: dec,
+            maximumFractionDigits: dec,
+          });
+          return `
       <div class="lb-cart-item" data-key="${item.key}">
         <img src="${item.image}" alt="${item.name}" onerror="this.src='images/product-hero-500g.jpg'"/>
         <div class="lb-cart-item-info">
           <div class="lb-cart-item-name">${item.name}</div>
-          <div class="lb-cart-item-price">${item.symbol}${(Number(item.price) * Number(item.qty)).toLocaleString(undefined, { minimumFractionDigits: Number(item.price) < 100 ? 2 : 0, maximumFractionDigits: Number(item.price) < 100 ? 2 : 0 })}</div>
+          <div class="lb-cart-item-price">${item.symbol}${lineStr}</div>
           <div class="lb-cart-qty-row">
             <button type="button" class="lb-qty-btn" onclick="LB_CART.setQty('${item.key}', ${item.qty - 1})">−</button>
             <span class="lb-qty-num">${item.qty}</span>
@@ -370,7 +392,8 @@ const LB_CART = {
             <button type="button" class="lb-cart-remove" onclick="LB_CART.remove('${item.key}')">Remove</button>
           </div>
         </div>
-      </div>`
+      </div>`;
+        }
       )
       .join('');
 
