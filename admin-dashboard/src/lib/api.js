@@ -11,6 +11,12 @@ function resolveApiBase() {
     if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h)) {
       return '/api';
     }
+    // Live site + preview deploys: always same-origin `/api` so Vercel proxies to Render.
+    // A baked `VITE_API_URL` would otherwise call `api.*` from the browser and often fails with
+    // "Failed to fetch" (CORS / TLS / DNS) even when the API is healthy.
+    if (h === 'lwangblack.co' || h === 'www.lwangblack.co' || /\.vercel\.app$/i.test(h)) {
+      return '/api';
+    }
   }
   if (import.meta.env.DEV) {
     return '/api';
