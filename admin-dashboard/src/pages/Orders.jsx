@@ -1,10 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
-import { apiFetch } from '../lib/api';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { apiFetch, getAccessToken } from '../lib/api';
+import { resolveRealtimeWsUrl } from '../lib/realtime';
 import { useAuth } from '../context/AuthContext';
 import { useCurrencyFormatter } from '../lib/currency';
+import ShipModal from '../components/ShipModal';
 import {
   Search, Filter, ChevronDown, X, Package, Truck, CheckCircle,
-  Clock, XCircle, RotateCcw, ArrowUpDown, ExternalLink, Copy, ChevronRight
+  Clock, XCircle, RotateCcw, ArrowUpDown, ExternalLink, Copy, ChevronRight,
+  DollarSign, Banknote
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -33,11 +36,54 @@ function copyText(text) {
 }
 
 // ── Order detail side panel ──────────────────────────────────────────────────
-function OrderDetail({ order, onClose, onStatusChange }) {
+function OrderDetail({ order, onClose, onStatusChange, onOrderPatched }) {
   const [updating, setUpdating] = useState(false);
   const [trackingInput, setTrackingInput] = useState(order.tracking || '');
   const [noteInput, setNoteInput] = useState('');
   const [timeline, setTimeline] = useState(order.timeline || []);
+  const [showShipModal, setShowShipModal] = useState(false);
+
+  const paymentMethod = (order.payment?.method || order.paymentMethod || '').toLowerCase();
+  const refundableMethods = ['stripe', 'card', 'paypal', 'afterpay', 'apple_pay', 'google_pay'];
+  const canRefund = order.status === 'paid' && refundableMethods.includes(paymentMethod);
+  const canCODConfirm = order.status === 'pending' && paymentMethod === 'cod';
+  const canShip = order.status === 'paid' && order.fulfillmentStatus !== 'shipped' && (order.tracking ? false : true);
+  // Show "Ship" also for shipped orders if they want to regenerate — but default to hide for clean flow.
+
+  const issueRefund = async () => {
+    const reason = prompt('Refund reason? (shown in audit log and gateway dashboard)');
+    if (reason == null) return; // cancelled
+    if (!reason.trim()) { alert('Reason is required.'); return; }
+    if (!confirm(`Issue a refund of ${order.symbol || ''}${(order.total || 0).toFixed(2)} to the customer? This calls the payment gateway.`)) return;
+    setUpdating(true);
+    try {
+      const data = await apiFetch(`/payments/${order.id}/refund`, {
+        method: 'POST',
+        body: { reason: reason.trim(), amount: order.total },
+      });
+      onStatusChange(order.id, 'refunded');
+      onOrderPatched?.(order.id, { status: 'refunded', refund: data });
+      alert('Refund issued.');
+    } catch (err) {
+      alert(`Refund failed: ${err.message}`);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const confirmCOD = async () => {
+    if (!confirm('Mark COD as collected? This transitions the order to "paid".')) return;
+    setUpdating(true);
+    try {
+      await apiFetch(`/payments/${order.id}/cod-confirm`, { method: 'POST' });
+      onStatusChange(order.id, 'paid');
+      onOrderPatched?.(order.id, { status: 'paid' });
+    } catch (err) {
+      alert(`COD confirmation failed: ${err.message}`);
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const updateStatus = async (newStatus) => {
     setUpdating(true);
@@ -80,6 +126,7 @@ function OrderDetail({ order, onClose, onStatusChange }) {
   const actions = nextActions[order.status] || [];
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="w-full max-w-lg bg-zinc-950 border-l border-zinc-800 flex flex-col h-full overflow-hidden">
@@ -124,13 +171,31 @@ function OrderDetail({ order, onClose, onStatusChange }) {
                     <XCircle size={13} /> Cancel
                   </button>
                 )}
-                {order.status === 'paid' && (
+                {canRefund && (
                   <button
-                    onClick={() => updateStatus('refunded')}
+                    onClick={issueRefund}
                     disabled={updating}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs transition-colors disabled:opacity-50"
                   >
-                    <RotateCcw size={13} /> Refund
+                    <RotateCcw size={13} /> Refund via {paymentMethod === 'paypal' ? 'PayPal' : 'Stripe'}
+                  </button>
+                )}
+                {canCODConfirm && (
+                  <button
+                    onClick={confirmCOD}
+                    disabled={updating}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 text-xs transition-colors disabled:opacity-50"
+                  >
+                    <Banknote size={13} /> COD collected
+                  </button>
+                )}
+                {order.status === 'paid' && order.fulfillmentStatus !== 'shipped' && (
+                  <button
+                    onClick={() => setShowShipModal(true)}
+                    disabled={updating}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-semibold transition-colors disabled:opacity-50"
+                  >
+                    <Truck size={13} /> Ship / Generate label
                   </button>
                 )}
                 {order.status === 'pending' && order.customer?.email && (
@@ -292,6 +357,34 @@ function OrderDetail({ order, onClose, onStatusChange }) {
         </div>
       </div>
     </div>
+    {showShipModal && (
+      <ShipModal
+        orderId={order.id}
+        defaultCountry={order.customer?.country || order.shippingAddress?.country || order.country}
+        prefill={{
+          name: `${order.customer?.fname || ''} ${order.customer?.lname || ''}`.trim(),
+          street: order.customer?.address || order.shippingAddress?.address1,
+          city:   order.customer?.city    || order.shippingAddress?.city,
+          state:  order.customer?.state   || order.shippingAddress?.state,
+          postal: order.customer?.zip     || order.shippingAddress?.zip     || order.shippingAddress?.postalCode,
+          country: order.customer?.country || order.shippingAddress?.country,
+          phone:  order.customer?.phone,
+        }}
+        onClose={() => setShowShipModal(false)}
+        onShipped={(data) => {
+          // Backend broadcasts order:shipped over WS; update local state too.
+          onStatusChange(order.id, 'shipped', data.trackingNumber);
+          onOrderPatched?.(order.id, {
+            status: 'shipped',
+            fulfillmentStatus: 'shipped',
+            tracking: data.trackingNumber,
+            carrier: data.carrier,
+            carrierId: data.carrier ? String(data.carrier).toLowerCase().replace(/\s+/g, '') : undefined,
+          });
+        }}
+      />
+    )}
+    </>
   );
 }
 
@@ -321,6 +414,39 @@ export default function Orders() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // ── Realtime: listen for order:shipped / order:updated / order:refunded
+  // so the list reflects backend state without a manual refresh.
+  useEffect(() => {
+    let ws;
+    let cancelled = false;
+    try {
+      ws = new WebSocket(resolveRealtimeWsUrl());
+    } catch { return; }
+    ws.addEventListener('open', () => {
+      const token = getAccessToken();
+      if (token) {
+        try { ws.send(JSON.stringify({ type: 'auth', token })); } catch {}
+      }
+    });
+    ws.addEventListener('message', (ev) => {
+      if (cancelled) return;
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch { return; }
+      if (!msg?.type) return;
+      if (msg.type === 'order:shipped' || msg.type === 'order:updated' || msg.type === 'order:refunded' || msg.type === 'order:new') {
+        // Cheapest correct path: re-fetch the list so any gateway-driven
+        // state (refund, webhook-set paid, shipped) is accurate.
+        load();
+      }
+    });
+    return () => { cancelled = true; try { ws.close(); } catch {} };
+  }, [load]);
+
+  const patchOrderLocal = (orderId, patch) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...patch } : o));
+    setSelected(prev => (prev && prev.id === orderId ? { ...prev, ...patch } : prev));
+  };
 
   // Filter + sort
   useEffect(() => {
@@ -515,6 +641,7 @@ export default function Orders() {
           order={selected}
           onClose={() => setSelected(null)}
           onStatusChange={handleStatusChange}
+          onOrderPatched={patchOrderLocal}
         />
       )}
     </>

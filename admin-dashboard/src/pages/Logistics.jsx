@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { apiFetch } from '../lib/api';
+import ShipModal from '../components/ShipModal';
 import {
   Truck, MapPin, Search, Package, Tag, CheckCircle, AlertTriangle,
   Edit2, X, Save, ExternalLink, Settings, RefreshCw, ChevronDown, ChevronUp
@@ -646,7 +647,13 @@ export default function Logistics() {
       </div>
 
       {/* Label modal */}
-      {labelModal && <LabelModal orderId={labelModal} onClose={() => setLabelModal(null)} />}
+      {labelModal && (
+        <ShipModal
+          orderId={labelModal}
+          defaultCountry="US"
+          onClose={() => setLabelModal(null)}
+        />
+      )}
     </div>
   );
 }

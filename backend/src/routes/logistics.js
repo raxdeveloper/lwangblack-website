@@ -34,6 +34,52 @@ function patchJsonOrder(orderKey, patch) {
   }
 }
 
+/** Unified "order was shipped" side-effect runner. Writes to SQL + JSON store,
+ *  broadcasts the WS event, and fires the async shipping-update notification.
+ *  Called by `/create-shipment`, `/usps/label`, and `/manual-shipment`. */
+async function syncOrderShipped({ orderId, trackingNumber, carrierId, carrierName, labelUrl = null }) {
+  if (!orderId || !trackingNumber) return;
+
+  // SQL path (idempotent — if the row doesn't exist the update is a no-op).
+  try {
+    await db.query(
+      'UPDATE orders SET tracking = $1, carrier = $2, status = $3, updated_at = NOW() WHERE id = $4',
+      [trackingNumber, carrierName || carrierId, 'shipped', orderId]
+    );
+  } catch (err) {
+    console.warn('[Logistics] SQL order update failed:', err.message);
+  }
+
+  // JSON-store path — storefront-originated orders live here, not SQL.
+  patchJsonOrder(orderId, {
+    trackingNumber,
+    carrier: carrierName || carrierId,
+    carrierId,
+    fulfillmentStatus: 'shipped',
+    shippingLabelUrl: labelUrl || null,
+  });
+
+  broadcast({ type: 'order:shipped', data: { orderId, trackingNumber, carrier: carrierId } });
+
+  // Async shipping-update email / SMS — never blocks the response.
+  (async () => {
+    try {
+      let orderData, custData;
+      if (db.isUsingMemory()) {
+        const mem = db.getMemStore();
+        orderData = mem.orders.find(o => o.id === orderId);
+        custData = orderData ? mem.customers.find(c => c.id === orderData.customer_id) : null;
+      } else {
+        const row = await db.queryOne(
+          `SELECT o.*, c.fname, c.lname, c.email AS customer_email, c.phone AS customer_phone
+           FROM orders o LEFT JOIN customers c ON o.customer_id = c.id WHERE o.id = $1`, [orderId]);
+        if (row) { orderData = row; custData = { fname: row.fname, lname: row.lname, email: row.customer_email, phone: row.customer_phone }; }
+      }
+      if (orderData && custData) await sendShippingUpdate(orderData, custData, trackingNumber, carrierId);
+    } catch (e) { console.error('[Logistics] Shipping-update notification error:', e.message); }
+  })();
+}
+
 const router = express.Router();
 
 /** AusPost (and similar APIs) need ISO 3166-1 alpha-2 — `EU` is not valid for rate quotes. */
@@ -339,42 +385,72 @@ router.post('/create-shipment', async (req, res) => {
     }
     if (!CARRIERS[carrier]) carrier = 'auspost';
 
-    // Delegate to carrier-specific label/shipment API
+    // Delegate to carrier-specific label/shipment API. Real errors surface
+    // to the admin so they can fix addresses / credentials instead of the
+    // silent LB* fallback tracking number we used to mint.
+    let labelError = null;
     try {
+      const {
+        weightKg, weightLbs, weightOz, weightGrams, lengthCm, widthCm, heightCm, trackingNumber: suppliedTracking,
+      } = req.body;
       switch (carrier) {
         case 'usps':
-          labelResult = await uspsService.generateLabel({ fromAddress, toAddress, orderId, serviceType: serviceCode });
+          labelResult = await uspsService.generateLabel({ fromAddress, toAddress, orderId, serviceType: serviceCode, weightLbs, weightOz });
           trackingNumber = labelResult.trackingNumber;
+          labelUrl = labelResult.labelUrl || null;
           break;
         case 'auspost':
-          labelResult = await auspostService.generateLabel({ fromAddress, toAddress, orderId, serviceCode });
+          labelResult = await auspostService.generateLabel({ fromAddress, toAddress, orderId, serviceCode, weightKg, lengthCm, widthCm, heightCm });
+          trackingNumber = labelResult.trackingNumber;
+          labelUrl = labelResult.labelUrl || null;
+          break;
+        case 'nzpost':
+          labelResult = await nzpostService.generateLabel({ fromAddress, toAddress, orderId, serviceCode, weightKg, lengthCm, widthCm, heightCm });
+          trackingNumber = labelResult.trackingNumber;
+          labelUrl = labelResult.labelUrl || null;
+          break;
+        case 'japanpost':
+          // JP Post has no label API — admin must paste a tracking number
+          // obtained from the JP Post counter. The service generates a
+          // printable PDF alongside the official slip.
+          labelResult = await japanpostService.generateLabel({
+            fromAddress, toAddress, orderId, serviceCode, weightGrams, trackingNumber: suppliedTracking,
+          });
           trackingNumber = labelResult.trackingNumber;
           break;
         case 'chitchats':
           labelResult = await chitchatsService.createShipment({ orderId, toAddress, fromAddress, serviceCode });
           trackingNumber = labelResult.trackingNumber;
-          labelUrl = labelResult.labelUrl;
+          labelUrl = labelResult.labelUrl || null;
           break;
         case 'pathao':
           labelResult = await pathaoService.createOrder({
             orderId,
             recipientName: toAddress?.name,
             recipientPhone: toAddress?.phone,
-            recipientAddress: toAddress?.street,
+            recipientAddress: toAddress?.street || toAddress?.line1,
             recipientCity: toAddress?.city,
             recipientZone: toAddress?.zone,
           });
           trackingNumber = labelResult.trackingNumber;
           break;
         default:
+          labelError = new Error(`Unsupported carrier: ${carrier}`);
+          labelError.code = 'UNSUPPORTED_CARRIER';
           break;
       }
     } catch (labelErr) {
       console.error(`[Logistics] ${carrier} label error:`, labelErr.message);
+      labelError = labelErr;
     }
 
     if (!trackingNumber) {
-      trackingNumber = `LB${Date.now().toString(36).toUpperCase()}`;
+      // No silent fallback any more — surface the error so admin can fix it.
+      return res.status(400).json({
+        error: labelError?.message || `Unable to generate ${carrier} label`,
+        code: labelError?.code || 'LABEL_FAILED',
+        carrier,
+      });
     }
 
     // Admin override for shipping cost
@@ -384,42 +460,13 @@ router.post('/create-shipment', async (req, res) => {
       } catch {}
     }
 
-    // Update order with tracking info — SQL path
-    try {
-      await db.query(
-        'UPDATE orders SET tracking = $1, carrier = $2, status = $3, updated_at = NOW() WHERE id = $4',
-        [trackingNumber, CARRIERS[carrier]?.name || carrier, 'shipped', orderId]
-      );
-    } catch {}
-
-    // Also patch the JSON-store order so storefront orders stay in sync
-    patchJsonOrder(orderId, {
+    await syncOrderShipped({
+      orderId,
       trackingNumber,
-      carrier: CARRIERS[carrier]?.name || carrier,
       carrierId: carrier,
-      fulfillmentStatus: 'shipped',
-      shippingLabelUrl: labelUrl || null,
+      carrierName: CARRIERS[carrier]?.name || carrier,
+      labelUrl,
     });
-
-    broadcast({ type: 'order:shipped', data: { orderId, trackingNumber, carrier } });
-
-    // Async notification
-    (async () => {
-      try {
-        let orderData, custData;
-        if (db.isUsingMemory()) {
-          const mem = db.getMemStore();
-          orderData = mem.orders.find(o => o.id === orderId);
-          custData = orderData ? mem.customers.find(c => c.id === orderData.customer_id) : null;
-        } else {
-          const row = await db.queryOne(
-            `SELECT o.*, c.fname, c.lname, c.email AS customer_email, c.phone AS customer_phone
-             FROM orders o LEFT JOIN customers c ON o.customer_id = c.id WHERE o.id = $1`, [orderId]);
-          if (row) { orderData = row; custData = { fname: row.fname, lname: row.lname, email: row.customer_email, phone: row.customer_phone }; }
-        }
-        if (orderData && custData) await sendShippingUpdate(orderData, custData, trackingNumber, carrier);
-      } catch (e) { console.error('[Logistics] Notification error:', e.message); }
-    })();
 
     res.json({
       success: true,
@@ -427,11 +474,12 @@ router.post('/create-shipment', async (req, res) => {
       carrier: CARRIERS[carrier]?.name || carrier,
       trackUrl: `${CARRIERS[carrier]?.trackUrl || ''}${trackingNumber}`,
       labelUrl,
+      labelBase64: labelResult?.labelBase64 || null,
       estimatedDelivery: new Date(Date.now() + 5 * 86400000).toISOString(),
     });
   } catch (err) {
     console.error('[Logistics] Create shipment error:', err);
-    res.status(500).json({ error: 'Shipment creation failed' });
+    res.status(500).json({ error: 'Shipment creation failed: ' + err.message });
   }
 });
 
@@ -624,12 +672,12 @@ router.post('/usps/label', requireRole('owner', 'manager'), async (req, res) => 
       orderId,
     });
 
-    // Persist label + tracking to DB
+    // Persist label artefacts specific to USPS (service code + PDF blob)
     const tn = labelResult.trackingNumber;
     try {
       await db.query(
-        `UPDATE orders SET tracking = $1, carrier = 'USPS', shipping_service = $2, status = 'shipped', updated_at = NOW() WHERE id = $3`,
-        [tn, serviceType || 'PRIORITY', orderId]
+        `UPDATE orders SET shipping_service = $1, updated_at = NOW() WHERE id = $2`,
+        [serviceType || 'PRIORITY', orderId]
       );
       if (!db.isUsingMemory()) {
         await db.query(
@@ -643,37 +691,15 @@ router.post('/usps/label', requireRole('owner', 'manager'), async (req, res) => 
       console.error('[Logistics] Label DB save error:', dbErr.message);
     }
 
-    // Also patch JSON-store order — storefront orders live there.
-    patchJsonOrder(orderId, {
+    // Shared "order shipped" side-effects: SQL update, JSON-store patch,
+    // WS broadcast, shipping-update email. Identical to /create-shipment.
+    await syncOrderShipped({
+      orderId,
       trackingNumber: tn,
-      carrier: 'USPS',
       carrierId: 'usps',
-      shippingMethod: serviceType || 'PRIORITY',
-      fulfillmentStatus: 'shipped',
+      carrierName: 'USPS',
+      labelUrl: labelResult.labelUrl || null,
     });
-
-    // Send shipping notification
-    (async () => {
-      try {
-        let orderData, custData;
-        if (db.isUsingMemory()) {
-          const mem = db.getMemStore();
-          orderData = mem.orders.find(o => o.id === orderId);
-          custData  = orderData ? mem.customers.find(c => c.id === orderData.customer_id) : null;
-        } else {
-          const row = await db.queryOne(
-            `SELECT o.*, c.fname, c.lname, c.email AS customer_email, c.phone AS customer_phone
-             FROM orders o LEFT JOIN customers c ON o.customer_id = c.id WHERE o.id = $1`, [orderId]
-          );
-          if (row) { orderData = row; custData = { fname: row.fname, lname: row.lname, email: row.customer_email, phone: row.customer_phone }; }
-        }
-        if (orderData && custData) {
-          await sendShippingUpdate(orderData, custData, tn, 'USPS');
-        }
-      } catch (e) { console.error('[Logistics] USPS label notification error:', e.message); }
-    })();
-
-    broadcast({ type: 'order:shipped', data: { orderId, trackingNumber: tn, carrier: 'USPS' } });
 
     await auditLog(db, {
       userId: req.user.id, username: req.user.username,
@@ -693,6 +719,58 @@ router.post('/usps/label', requireRole('owner', 'manager'), async (req, res) => 
     });
   } catch (err) {
     console.error('[Logistics] USPS label error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/logistics/manual-shipment ──────────────────────────────────────
+// Escape hatch: admin already got a tracking number from a carrier's own
+// portal (e.g. AusPost eParcel counter, NZ Post retail slip, JP Post EMS
+// form). This attaches it to the order and marks it shipped without calling
+// any carrier API. Reuses the shared syncOrderShipped helper.
+router.post('/manual-shipment', requireRole('owner', 'manager'), async (req, res) => {
+  try {
+    const { orderId, carrierId, trackingNumber, serviceLabel, labelUrl } = req.body;
+    if (!orderId) return res.status(400).json({ error: 'orderId required' });
+    if (!carrierId) return res.status(400).json({ error: 'carrierId required' });
+    if (!trackingNumber || !String(trackingNumber).trim()) {
+      return res.status(400).json({ error: 'trackingNumber required' });
+    }
+    const knownCarrier = CARRIERS[carrierId];
+    const carrierName = knownCarrier?.name || carrierId;
+
+    await syncOrderShipped({
+      orderId,
+      trackingNumber: String(trackingNumber).trim(),
+      carrierId,
+      carrierName,
+      labelUrl: labelUrl || null,
+    });
+
+    // Optional — persist service label onto the order row if present.
+    if (serviceLabel) {
+      try {
+        await db.query(
+          `UPDATE orders SET shipping_service = $1, updated_at = NOW() WHERE id = $2`,
+          [serviceLabel, orderId]
+        );
+      } catch {}
+    }
+
+    await auditLog(db, {
+      userId: req.user.id, username: req.user.username,
+      action: 'manual_shipment', entityType: 'logistics', entityId: orderId,
+      details: { carrierId, trackingNumber, serviceLabel }, ip: req.ip,
+    }).catch(() => {});
+
+    res.json({
+      success: true,
+      trackingNumber,
+      carrier: carrierName,
+      trackUrl: knownCarrier ? `${knownCarrier.trackUrl}${trackingNumber}` : null,
+    });
+  } catch (err) {
+    console.error('[Logistics] Manual shipment error:', err);
     res.status(500).json({ error: err.message });
   }
 });

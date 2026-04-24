@@ -14,15 +14,53 @@ const NZPOST_BASE = 'https://api.nzpost.co.nz';
 async function getConfig() {
   const c = await dynConfig.getGatewayConfig('nzpost');
   return {
-    apiKey:       c.apiKey || '',
-    clientId:     process.env.NZPOST_CLIENT_ID || '',
-    clientSecret: process.env.NZPOST_CLIENT_SECRET || '',
+    apiKey:       c.apiKey       || process.env.NZPOST_API_KEY || '',
+    clientId:     c.clientId     || process.env.NZPOST_CLIENT_ID || '',
+    clientSecret: c.clientSecret || process.env.NZPOST_CLIENT_SECRET || '',
+    siteCode:     c.siteCode     || process.env.NZPOST_SITE_CODE || '',
   };
 }
 
 async function isConfigured() {
   const { apiKey } = await getConfig();
   return !!apiKey;
+}
+
+async function isLabelConfigured() {
+  const { clientId, clientSecret, siteCode } = await getConfig();
+  return !!(clientId && clientSecret && siteCode);
+}
+
+// OAuth2 client_credentials token — cached in memory for its TTL.
+let _cachedToken = null;
+let _tokenExpiresAt = 0;
+async function getOAuthToken() {
+  const { clientId, clientSecret } = await getConfig();
+  if (!clientId || !clientSecret) {
+    const err = new Error('NZ Post OAuth not configured — set NZPOST_CLIENT_ID, NZPOST_CLIENT_SECRET');
+    err.code = 'NOT_CONFIGURED';
+    throw err;
+  }
+  if (_cachedToken && Date.now() < _tokenExpiresAt - 30000) return _cachedToken;
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: 'parceladdress parcellabel',
+  });
+  const res = await fetch(`${NZPOST_BASE}/oauth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+    body: body.toString(),
+    timeout: 10000,
+  });
+  const data = await res.json();
+  if (!res.ok || !data.access_token) {
+    throw new Error(`NZ Post OAuth failed: ${data.error_description || JSON.stringify(data)}`);
+  }
+  _cachedToken = data.access_token;
+  _tokenExpiresAt = Date.now() + ((data.expires_in || 3600) * 1000);
+  return _cachedToken;
 }
 
 // ── Rate Calculation ─────────────────────────────────────────────────────────
@@ -149,4 +187,110 @@ function getDemoTracking(trackingNumber) {
   };
 }
 
-module.exports = { isConfigured, getRates, trackShipment, getDemoRates, getDemoTracking };
+// ── Label Generation (eShip / Parcel Label API) ─────────────────────────────
+// Docs: https://anypost.nzpost.co.nz/docs/parcellabel/v4
+// Flow:
+//   POST /parcellabel/v4/labels  with sender, receiver, parcel
+//   Response contains consignment_number (tracking), ticket_number, label (base64 PDF).
+async function generateLabel({
+  orderId,
+  fromAddress = {},
+  toAddress = {},
+  weightKg = 0.5,
+  lengthCm = 22,
+  widthCm = 15,
+  heightCm = 8,
+  serviceCode = 'CPOLP', // CourierPost Overnight Local Parcel (common default)
+}) {
+  const cfg = await getConfig();
+  if (!cfg.clientId || !cfg.clientSecret || !cfg.siteCode) {
+    const err = new Error('NZ Post labels not configured — set NZPOST_CLIENT_ID, NZPOST_CLIENT_SECRET, NZPOST_SITE_CODE');
+    err.code = 'NOT_CONFIGURED';
+    throw err;
+  }
+
+  const token = await getOAuthToken();
+
+  const body = {
+    carrier: 'CourierPost',
+    service_code: serviceCode,
+    site_code: cfg.siteCode,
+    sender: {
+      name: fromAddress.name || 'Lwang Black',
+      address1: fromAddress.line1 || fromAddress.street || '',
+      address2: fromAddress.line2 || '',
+      suburb: fromAddress.suburb || fromAddress.city || '',
+      city: fromAddress.city || '',
+      postcode: fromAddress.postcode || fromAddress.postal || '1010',
+      country_code: (fromAddress.country || 'NZ').toUpperCase(),
+      phone: fromAddress.phone || '',
+      email: fromAddress.email || '',
+    },
+    receiver: {
+      name: toAddress.name || '',
+      address1: toAddress.line1 || toAddress.street || '',
+      address2: toAddress.line2 || '',
+      suburb: toAddress.suburb || toAddress.city || '',
+      city: toAddress.city || '',
+      postcode: toAddress.postcode || toAddress.postal || '',
+      country_code: (toAddress.country || 'NZ').toUpperCase(),
+      phone: toAddress.phone || '',
+      email: toAddress.email || '',
+    },
+    parcels: [{
+      weight: weightKg,
+      length: lengthCm,
+      width: widthCm,
+      height: heightCm,
+    }],
+    references: { customer_reference: orderId || `ORD-${Date.now()}` },
+  };
+
+  let labelRes, labelData;
+  try {
+    labelRes = await fetch(`${NZPOST_BASE}/parcellabel/v4/labels`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(body),
+      timeout: 15000,
+    });
+    labelData = await labelRes.json();
+  } catch (err) {
+    throw new Error(`NZ Post label network error: ${err.message}`);
+  }
+  if (!labelRes.ok) {
+    const detail = labelData.error_description || labelData.message || JSON.stringify(labelData).slice(0, 300);
+    throw new Error(`NZ Post label failed: ${detail}`);
+  }
+
+  // Response shape varies across versions — pull the common fields.
+  const consignment = labelData.consignment_number
+    || labelData.tracking_reference
+    || labelData.parcels?.[0]?.tracking_reference
+    || labelData.ticket_number;
+  const labelBase64 = labelData.label
+    || labelData.labels?.[0]
+    || labelData.parcels?.[0]?.label
+    || null;
+
+  if (!consignment) {
+    throw new Error('NZ Post label response missing tracking / consignment number');
+  }
+
+  return {
+    trackingNumber: consignment,
+    labelBase64,
+    labelUrl: labelData.label_url || null,
+    postage: parseFloat(labelData.total_price || labelData.price || 0) || null,
+    serviceType: serviceCode,
+    carrier: 'NZ Post',
+    ticketNumber: labelData.ticket_number || null,
+    demo: false,
+  };
+}
+
+module.exports = { isConfigured, isLabelConfigured, getRates, trackShipment, generateLabel, getDemoRates, getDemoTracking };

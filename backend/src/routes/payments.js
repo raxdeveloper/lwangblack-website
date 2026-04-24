@@ -572,18 +572,34 @@ router.post('/checkout', async (req, res) => {
 
     // ── Cash on Delivery ──
     if (gateway === 'cod') {
-      if (country !== 'NP') {
+      // Gate by COD_ENABLED_COUNTRIES env (comma-separated ISO codes, or "*" for all).
+      // Default "*" — backend allows COD everywhere unless operator narrows the list.
+      const codAllowlist = (process.env.COD_ENABLED_COUNTRIES || '*').trim();
+      const allowAll = codAllowlist === '*';
+      const allowedCountries = allowAll
+        ? null
+        : codAllowlist.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+      const countryCode = (country || '').toUpperCase();
+      if (!allowAll && !allowedCountries.includes(countryCode)) {
         await cancelOrder(orderId);
-        return res.status(400).json({ error: 'Cash on Delivery is only available within Nepal.' });
+        return res.status(400).json({
+          error: `Cash on Delivery is not available in ${countryCode || 'your region'}.`,
+        });
       }
       // COD stays pending until admin confirms delivery; no payment initiation needed
-      broadcast({ type: 'order:new', data: { orderId, country: 'NP', total, status: 'pending', method: 'cod' } });
+      const displayCurrency = (currency || CURRENCY_MAP[countryCode] || 'USD').toString().toUpperCase();
+      const displaySymbol = symbol || '';
+      const totalFormatted = `${displaySymbol}${parseFloat(total).toLocaleString()} ${displayCurrency}`.trim();
+      const estimatedDelivery = countryCode === 'NP'
+        ? '2–5 business days within Kathmandu Valley'
+        : '5–10 business days';
+      broadcast({ type: 'order:new', data: { orderId, country: countryCode, total, status: 'pending', method: 'cod' } });
       return res.json({
         orderId,
         success: true,
         method: 'cod',
-        message: `COD order placed. Pay NPR ${parseFloat(total).toLocaleString()} upon delivery.`,
-        estimatedDelivery: '2–5 business days within Kathmandu Valley',
+        message: `COD order placed. Pay ${totalFormatted} upon delivery.`,
+        estimatedDelivery,
       });
     }
 

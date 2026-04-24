@@ -713,13 +713,23 @@
         <span class="co-pay-icon">${BRAND_ICONS.amex}</span>
         ${BRAND_ICONS.more(2)}`;
 
-      // Full method catalog — we will filter this by the backend's
-      // /api/payments/methods response so only configured gateways render.
+      // Full method catalog — the backend's `/api/payments/methods` response
+      // narrows this to the gateways actually configured for the country.
+      // COD is globally available in the UI; the backend enforces the
+      // `COD_ENABLED_COUNTRIES` allowlist and returns 400 if disallowed.
+      const COD_METHOD = {
+        id: 'cod',
+        label: 'Cash on Delivery',
+        icons: `<span class="co-pay-icon">${BRAND_ICONS.cod}</span>`,
+        desc: isNepal
+          ? 'Pay NPR cash upon delivery.'
+          : 'Pay with cash when your order arrives.',
+      };
       const ALL_METHODS = isNepal ? [
         { id:'card',   label:'Credit card',      icons: CARD_ICONS },
         { id:'esewa',  label:'eSewa',             icons:`<span class="co-pay-icon">${BRAND_ICONS.esewa}</span>`,  redirect:"You'll be redirected to eSewa to complete payment." },
         { id:'khalti', label:'Khalti',            icons:`<span class="co-pay-icon">${BRAND_ICONS.khalti}</span>`, redirect:"You'll be redirected to Khalti to complete payment." },
-        { id:'cod',    label:'Cash on Delivery',  icons:`<span class="co-pay-icon">${BRAND_ICONS.cod}</span>`,    desc:'Pay NPR cash upon delivery. Available within Nepal only.' },
+        COD_METHOD,
       ] : [
         { id:'card',       label:'Credit card', icons: CARD_ICONS },
         { id:'paypal',     label:'PayPal',      icons:`<span class="co-pay-icon">${BRAND_ICONS.paypal}</span>`,    redirect:"You'll be redirected to PayPal to complete your purchase." },
@@ -727,6 +737,7 @@
         { id:'apple_pay',  label:'Apple Pay',   icons:`<span class="co-pay-icon">${BRAND_ICONS.applepay}</span>`,  redirect:"Fast checkout with Face ID / Touch ID via Apple Pay." },
         { id:'google_pay', label:'Google Pay',  icons:`<span class="co-pay-icon">${BRAND_ICONS.googlepay}</span>`, redirect:"Quick checkout using your saved Google payment." },
         { id:'esewa',      label:'eSewa',        icons:`<span class="co-pay-icon">${BRAND_ICONS.esewa}</span>`,    redirect:"You'll be redirected to eSewa." },
+        COD_METHOD,
       ];
 
       // Ask the API which methods are actually configured for this country.

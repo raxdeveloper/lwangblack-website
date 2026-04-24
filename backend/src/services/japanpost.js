@@ -165,4 +165,93 @@ function getDemoTracking(trackingNumber) {
   };
 }
 
-module.exports = { isConfigured, getRates, trackShipment, getDemoRates, getDemoTracking };
+// ── Label Generation (PDF-first) ────────────────────────────────────────────
+// Japan Post does not expose a public label-generation REST API for
+// international parcels / EMS — customers lodge labels through Yu-Pack
+// Prints or Click Post, or at the counter. This generator produces a
+// printable shipping label PDF so the admin can still ship JP orders
+// end-to-end. The tracking number is supplied by the admin (from the JP
+// Post counter, EMS label slip, or Click Post), and the PDF includes
+// sender/recipient addresses + a barcode-styled tracking block the admin
+// can affix alongside the official label.
+async function generateLabel({
+  orderId,
+  fromAddress = {},
+  toAddress = {},
+  weightGrams = 500,
+  serviceCode = 'EMS',
+  trackingNumber, // REQUIRED — admin pastes the number from the JP Post counter
+}) {
+  if (!trackingNumber || !String(trackingNumber).trim()) {
+    const err = new Error('Japan Post label requires a tracking number — obtain it from the JP Post counter or Click Post, then enter it here.');
+    err.code = 'TRACKING_REQUIRED';
+    throw err;
+  }
+
+  let PDFDocument;
+  try {
+    PDFDocument = require('pdfkit');
+  } catch (_err) {
+    throw new Error('Japan Post label generator needs the "pdfkit" package (npm install pdfkit)');
+  }
+
+  const labelBase64 = await new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A6', margin: 14 });
+    const chunks = [];
+    doc.on('data', c => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks).toString('base64')));
+    doc.on('error', reject);
+
+    doc.fontSize(10).fillColor('#666').text('Japan Post — Shipping Label', { align: 'left' });
+    doc.moveDown(0.2);
+    doc.fontSize(14).fillColor('#000').text(`Service: ${serviceCode}`, { align: 'left' });
+    doc.fontSize(9).fillColor('#666').text(`Order: ${orderId || 'N/A'}    Weight: ${weightGrams}g`);
+    doc.moveDown(0.4);
+
+    doc.moveTo(doc.x, doc.y).lineTo(doc.x + 260, doc.y).strokeColor('#000').stroke();
+    doc.moveDown(0.3);
+
+    doc.fontSize(8).fillColor('#666').text('FROM / SENDER');
+    doc.fontSize(10).fillColor('#000');
+    doc.text(fromAddress.name || 'Lwang Black');
+    doc.text(fromAddress.line1 || fromAddress.street || '');
+    if (fromAddress.line2) doc.text(fromAddress.line2);
+    doc.text(`${fromAddress.city || ''} ${fromAddress.postcode || fromAddress.postal || ''}`);
+    doc.text(fromAddress.country || 'JP');
+    if (fromAddress.phone) doc.text(`Tel: ${fromAddress.phone}`);
+
+    doc.moveDown(0.5);
+    doc.fontSize(8).fillColor('#666').text('TO / RECIPIENT');
+    doc.fontSize(12).fillColor('#000');
+    doc.text(toAddress.name || '');
+    doc.fontSize(10);
+    doc.text(toAddress.line1 || toAddress.street || '');
+    if (toAddress.line2) doc.text(toAddress.line2);
+    doc.text(`${toAddress.city || ''} ${toAddress.state || ''} ${toAddress.postcode || toAddress.postal || ''}`.trim());
+    doc.fontSize(12).text((toAddress.country || '').toUpperCase());
+    if (toAddress.phone) doc.fontSize(10).text(`Tel: ${toAddress.phone}`);
+
+    doc.moveDown(0.6);
+    doc.moveTo(doc.x, doc.y).lineTo(doc.x + 260, doc.y).strokeColor('#000').stroke();
+    doc.moveDown(0.3);
+
+    doc.fontSize(8).fillColor('#666').text('TRACKING NUMBER');
+    doc.fontSize(18).fillColor('#000').text(trackingNumber, { align: 'center' });
+    doc.fontSize(8).fillColor('#666').text('Affix alongside the official JP Post slip.', { align: 'center' });
+
+    doc.end();
+  });
+
+  return {
+    trackingNumber,
+    labelBase64,
+    labelUrl: null,
+    postage: null,
+    serviceType: serviceCode,
+    carrier: 'Japan Post',
+    demo: false,
+    note: 'Locally generated PDF — JP Post has no public label API. Admin provides tracking from JP Post counter.',
+  };
+}
+
+module.exports = { isConfigured, getRates, trackShipment, generateLabel, getDemoRates, getDemoTracking };
