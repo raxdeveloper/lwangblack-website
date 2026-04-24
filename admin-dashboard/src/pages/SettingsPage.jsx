@@ -345,6 +345,44 @@ export default function SettingsPage() {
     </button>
   );
 
+  // "Test connection" button — pings the backend test endpoint for a given
+  // gateway or carrier and renders a green/red result inline.
+  const TestBtn = ({ kind, id, label }) => {
+    const [busy, setBusy] = useState(false);
+    const [result, setResult] = useState(null);
+    const run = async () => {
+      setBusy(true);
+      setResult(null);
+      try {
+        const path = kind === 'carrier' ? `/logistics/test/${id}` : `/payments/test/${id}`;
+        const r = await apiFetch(path, { method: 'POST' });
+        setResult(r);
+      } catch (err) {
+        setResult({ ok: false, message: err.message });
+      } finally {
+        setBusy(false);
+      }
+    };
+    return (
+      <div className="flex items-center gap-3 flex-wrap">
+        <button
+          type="button"
+          onClick={run}
+          disabled={busy}
+          className="flex items-center gap-2 px-3 py-2 border border-white/15 hover:bg-white/10 rounded-lg text-xs transition-colors disabled:opacity-50"
+        >
+          {busy ? <RefreshCw size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+          {label || 'Test connection'}
+        </button>
+        {result && (
+          <span className={`text-xs ${result.ok ? 'text-green-400' : 'text-amber-400'}`}>
+            {result.ok ? '✓' : '⚠'} {result.message || (result.ok ? 'OK' : 'Not configured')}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   if (loadError) return (
     <div className="flex items-center gap-2 text-red-400 p-4">
       <AlertTriangle size={16} /> Failed to load settings: {loadError}
@@ -507,7 +545,10 @@ export default function SettingsPage() {
                 <p>Webhook endpoint: <span className="font-mono text-white/60">/api/payments/stripe-webhook</span></p>
                 <p>Events to listen for: <span className="font-mono">checkout.session.completed</span>, <span className="font-mono">payment_intent.payment_failed</span></p>
               </div>
-              <SaveBtn keys={['stripe_secret_key','stripe_publishable_key','stripe_webhook_secret','stripe_mode']} label="Save Stripe settings" />
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['stripe_secret_key','stripe_publishable_key','stripe_webhook_secret','stripe_mode']} label="Save Stripe settings" />
+                <TestBtn kind="payment" id="stripe" />
+              </div>
             </GatewayCard>
 
             {/* PayPal */}
@@ -532,7 +573,10 @@ export default function SettingsPage() {
                 placeholder="EeFfGgHh..."
                 hint={gatewayStatus.paypal?.hasSecret ? '••••••••' : ''}
               />
-              <SaveBtn keys={['paypal_client_id','paypal_client_secret','paypal_mode']} label="Save PayPal settings" />
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['paypal_client_id','paypal_client_secret','paypal_mode']} label="Save PayPal settings" />
+                <TestBtn kind="payment" id="paypal" />
+              </div>
             </GatewayCard>
 
             {/* eSewa (Nepal) */}
@@ -557,7 +601,93 @@ export default function SettingsPage() {
                 placeholder="8gBm/:&EnhH.1/q"
                 hint={gatewayStatus.esewa?.hasSecret ? '••••••••' : ''}
               />
-              <SaveBtn keys={['esewa_merchant_id','esewa_secret_key','esewa_mode']} label="Save eSewa settings" />
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['esewa_merchant_id','esewa_secret_key','esewa_mode']} label="Save eSewa settings" />
+                <TestBtn kind="payment" id="esewa" />
+              </div>
+            </GatewayCard>
+
+            {/* Khalti (Nepal) */}
+            <GatewayCard
+              logo="https://khalti.com/static/images/khalti-logo.svg"
+              name="Khalti"
+              description="Nepal's digital wallet for fast one-tap payments."
+              status={gatewayStatus.khalti?.enabled}
+              docUrl="https://docs.khalti.com/"
+            >
+              <ModeToggle label="Mode" value={field('khalti_mode') || gatewayStatus.khalti?.mode || 'test'} onChange={v => setField('khalti_mode', v)} />
+              <SecretInput
+                label="Secret Key"
+                value={pending.khalti_secret_key || ''}
+                onChange={v => setField('khalti_secret_key', v)}
+                placeholder="key-..."
+                hint={gatewayStatus.khalti?.keyHint}
+              />
+              <TextInput
+                label="Public Key"
+                value={field('khalti_public_key')}
+                onChange={v => setField('khalti_public_key', v)}
+                placeholder="public-key-..."
+              />
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['khalti_secret_key','khalti_public_key','khalti_mode']} label="Save Khalti settings" />
+                <TestBtn kind="payment" id="khalti" />
+              </div>
+            </GatewayCard>
+
+            {/* Nabil Bank (Nepal) */}
+            <GatewayCard
+              logo="https://www.nabilbank.com/favicon.ico"
+              name="Nabil Bank"
+              description="Direct Visa/Mastercard processing via Nabil Bank's payment gateway (Nepal)."
+              status={gatewayStatus.nabil?.enabled}
+              docUrl="https://www.nabilbank.com/"
+            >
+              <ModeToggle label="Mode" value={field('nabil_mode') === 'live' || gatewayStatus.nabil?.mode === 'live' ? 'live' : 'test'} onChange={v => setField('nabil_mode', v)} />
+              <TextInput
+                label="Merchant ID"
+                value={field('nabil_merchant_id')}
+                onChange={v => setField('nabil_merchant_id', v)}
+                placeholder="NB_MERCHANT_ID"
+              />
+              <SecretInput
+                label="Secret Key"
+                value={pending.nabil_secret_key || ''}
+                onChange={v => setField('nabil_secret_key', v)}
+                placeholder="secret key"
+                hint={gatewayStatus.nabil?.hasSecret ? '••••••••' : ''}
+              />
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['nabil_merchant_id','nabil_secret_key','nabil_mode']} label="Save Nabil settings" />
+                <TestBtn kind="payment" id="nabil" />
+              </div>
+            </GatewayCard>
+
+            {/* COD (no keys — just on/off) */}
+            <GatewayCard
+              logo="https://cdn-icons-png.flaticon.com/512/2991/2991144.png"
+              name="Cash on Delivery"
+              description="Allow customers (currently Nepal only) to pay in cash on arrival."
+              status={gatewayStatus.cod?.enabled}
+              docUrl={null}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-white/80">COD enabled</span>
+                <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs font-medium">
+                  <button
+                    onClick={() => setField('cod_enabled', 'false')}
+                    className={`px-3 py-1.5 transition-colors ${(field('cod_enabled') === 'false') ? 'bg-red-500 text-black' : 'bg-white/5 text-white/50 hover:text-zinc-100'}`}
+                  >Off</button>
+                  <button
+                    onClick={() => setField('cod_enabled', 'true')}
+                    className={`px-3 py-1.5 transition-colors ${(field('cod_enabled') !== 'false') ? 'bg-green-500 text-black' : 'bg-white/5 text-white/50 hover:text-zinc-100'}`}
+                  >On</button>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['cod_enabled']} label="Save COD settings" />
+                <TestBtn kind="payment" id="cod" />
+              </div>
             </GatewayCard>
 
           </>
@@ -570,6 +700,52 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold mb-1">Shipping & logistics</h2>
               <p className="text-sm text-white/40">Configure shipping carriers. Keys are used live for rate calculation, label generation, and tracking.</p>
             </div>
+
+            {/* USPS (United States) */}
+            <GatewayCard
+              logo="https://upload.wikimedia.org/wikipedia/commons/1/1d/United_States_Postal_Service_Logo.svg"
+              name="USPS (United States)"
+              description="Primary carrier for US shipments — live rates, label generation, tracking."
+              status={gatewayStatus.usps?.enabled}
+              docUrl="https://registration.shippingapis.com/"
+            >
+              <TextInput
+                label="USPS User ID"
+                value={field('usps_user_id')}
+                onChange={v => setField('usps_user_id', v)}
+                placeholder="123USERNAME456"
+              />
+              <SecretInput
+                label="USPS Password (required for label generation)"
+                value={pending.usps_password || ''}
+                onChange={v => setField('usps_password', v)}
+                placeholder="••••••••"
+                hint={gatewayStatus.usps?.hasPassword ? '••••••••' : ''}
+              />
+              <TextInput
+                label="Ship-from ZIP (origin)"
+                value={field('usps_from_zip') || gatewayStatus.usps?.fromZip || ''}
+                onChange={v => setField('usps_from_zip', v)}
+                placeholder="10001"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-white/80">Test mode (USPS staging endpoint)</span>
+                <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs font-medium">
+                  <button
+                    onClick={() => setField('usps_test_mode', 'true')}
+                    className={`px-3 py-1.5 transition-colors ${(field('usps_test_mode') !== 'false') ? 'bg-amber-500 text-black' : 'bg-white/5 text-white/50 hover:text-zinc-100'}`}
+                  >Test</button>
+                  <button
+                    onClick={() => setField('usps_test_mode', 'false')}
+                    className={`px-3 py-1.5 transition-colors ${(field('usps_test_mode') === 'false') ? 'bg-green-500 text-black' : 'bg-white/5 text-white/50 hover:text-zinc-100'}`}
+                  >Live</button>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['usps_user_id','usps_password','usps_from_zip','usps_test_mode']} label="Save USPS settings" />
+                <TestBtn kind="carrier" id="usps" />
+              </div>
+            </GatewayCard>
 
             {/* Canada */}
             <GatewayCard
@@ -586,7 +762,10 @@ export default function SettingsPage() {
                 placeholder="chitchats_api_key"
                 hint={gatewayStatus.chitchats?.keyHint}
               />
-              <SaveBtn keys={['chitchats_api_key']} label="Save Chit Chats settings" />
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['chitchats_api_key']} label="Save Chit Chats settings" />
+                <TestBtn kind="carrier" id="chitchats" />
+              </div>
             </GatewayCard>
 
             {/* Australia + International */}
@@ -604,7 +783,10 @@ export default function SettingsPage() {
                 placeholder="auspost_api_key"
                 hint={gatewayStatus.auspost?.keyHint}
               />
-              <SaveBtn keys={['auspost_api_key']} label="Save Australia Post settings" />
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['auspost_api_key']} label="Save Australia Post settings" />
+                <TestBtn kind="carrier" id="auspost" />
+              </div>
             </GatewayCard>
 
             {/* New Zealand */}
@@ -622,7 +804,10 @@ export default function SettingsPage() {
                 placeholder="nzpost_api_key"
                 hint={gatewayStatus.nzpost?.keyHint}
               />
-              <SaveBtn keys={['nzpost_api_key']} label="Save NZ Post settings" />
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['nzpost_api_key']} label="Save NZ Post settings" />
+                <TestBtn kind="carrier" id="nzpost" />
+              </div>
             </GatewayCard>
 
             {/* Japan */}
@@ -640,25 +825,65 @@ export default function SettingsPage() {
                 placeholder="japanpost_api_key"
                 hint={gatewayStatus.japanpost?.keyHint}
               />
-              <SaveBtn keys={['japanpost_api_key']} label="Save Japan Post settings" />
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn keys={['japanpost_api_key']} label="Save Japan Post settings" />
+                <TestBtn kind="carrier" id="japanpost" />
+              </div>
             </GatewayCard>
 
-            {/* Nepal */}
+            {/* Nepal — Pathao uses multi-field OAuth */}
             <GatewayCard
               logo={LOGOS.pathao}
               name="Pathao (Nepal)"
-              description="Dedicated logistics provider for Nepal shipments."
+              description="Dedicated logistics provider for Nepal shipments. Uses OAuth2 — enter all merchant credentials below."
               status={gatewayStatus.pathao?.enabled}
-              docUrl="https://pathao.com/np/"
+              docUrl="https://merchant.pathao.com/"
             >
-              <SecretInput
-                label="API Key"
-                value={pending.pathao_api_key || ''}
-                onChange={v => setField('pathao_api_key', v)}
-                placeholder="pathao_api_key"
-                hint={gatewayStatus.pathao?.keyHint}
+              <ModeToggle
+                label="Mode"
+                value={field('pathao_mode') || gatewayStatus.pathao?.mode || 'sandbox'}
+                onChange={v => setField('pathao_mode', v)}
               />
-              <SaveBtn keys={['pathao_api_key']} label="Save Pathao settings" />
+              <TextInput
+                label="Client ID"
+                value={field('pathao_client_id')}
+                onChange={v => setField('pathao_client_id', v)}
+                placeholder="Pathao OAuth2 client id"
+              />
+              <TextInput
+                label="Client Email"
+                value={field('pathao_client_email')}
+                onChange={v => setField('pathao_client_email', v)}
+                placeholder="merchant@example.com"
+                type="email"
+              />
+              <SecretInput
+                label="Client Password"
+                value={pending.pathao_client_password || ''}
+                onChange={v => setField('pathao_client_password', v)}
+                placeholder="Pathao merchant password"
+                hint={gatewayStatus.pathao?.hasClientPassword ? '••••••••' : ''}
+              />
+              <SecretInput
+                label="Client Secret"
+                value={pending.pathao_secret_key || ''}
+                onChange={v => setField('pathao_secret_key', v)}
+                placeholder="Pathao OAuth2 client secret"
+                hint={gatewayStatus.pathao?.hasSecret ? '••••••••' : ''}
+              />
+              <TextInput
+                label="Store ID"
+                value={field('pathao_store_id')}
+                onChange={v => setField('pathao_store_id', v)}
+                placeholder="1234"
+              />
+              <div className="flex items-center gap-3 flex-wrap">
+                <SaveBtn
+                  keys={['pathao_client_id','pathao_client_email','pathao_client_password','pathao_secret_key','pathao_store_id','pathao_mode']}
+                  label="Save Pathao settings"
+                />
+                <TestBtn kind="carrier" id="pathao" />
+              </div>
             </GatewayCard>
           </>
         )}

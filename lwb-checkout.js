@@ -58,8 +58,14 @@
   }
 
   function showErr(msg) {
-    if (typeof window.showCheckoutError === 'function') window.showCheckoutError(msg);
-    else alert(msg);
+    // Clean up admin-facing wording before showing it to customers.
+    const cleaned = String(msg || 'Checkout failed')
+      .replace(/\s*Add.*?Admin\s*→\s*Settings[^.]*\.?/gi, '')
+      .replace(/\s*Add\s+[A-Z_]+_KEY[^.]*\.?/g, '')
+      .replace(/\s+/g, ' ')
+      .trim() || 'This payment method is not available right now. Please try another option.';
+    if (typeof window.showCheckoutError === 'function') window.showCheckoutError(cleaned);
+    else alert(cleaned);
   }
 
   async function validateCartStockLines() {

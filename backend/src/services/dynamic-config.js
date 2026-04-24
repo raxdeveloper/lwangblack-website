@@ -139,8 +139,20 @@ async function getGatewayConfig(gateway) {
 
     case 'pathao':
       return {
-        apiKey:  s.pathao_api_key || env.PATHAO_API_KEY || '',
-        enabled: isEnabled(s, 'pathao', 'PATHAO_API_KEY'),
+        apiKey:         s.pathao_api_key         || env.PATHAO_API_KEY         || '',
+        secretKey:      s.pathao_secret_key      || env.PATHAO_SECRET_KEY      || '',
+        clientId:       s.pathao_client_id       || env.PATHAO_CLIENT_ID       || '',
+        clientEmail:    s.pathao_client_email    || env.PATHAO_CLIENT_EMAIL    || '',
+        clientPassword: s.pathao_client_password || env.PATHAO_CLIENT_PASSWORD || '',
+        storeId:        s.pathao_store_id        || env.PATHAO_STORE_ID        || '',
+        isLive:         (s.pathao_mode || env.PATHAO_LIVE || 'sandbox') === 'live' ||
+                        (s.pathao_mode || env.PATHAO_LIVE || '') === 'true',
+        enabled:        isEnabled(s, 'pathao', 'PATHAO_CLIENT_ID'),
+      };
+
+    case 'cod':
+      return {
+        enabled: isEnabled(s, 'cod', 'COD_ENABLED'),
       };
 
     case 'sendgrid':
@@ -207,10 +219,12 @@ async function getGatewayStatus() {
       hasSecret:    present(s.nabil_secret_key || env.NABIL_SECRET_KEY),
     },
     usps: {
-      enabled:    isEnabled(s, 'usps', 'USPS_USER_ID'),
-      hasUserId:  present(s.usps_user_id || env.USPS_USER_ID),
-      userIdHint: mask(s.usps_user_id || env.USPS_USER_ID),
-      testMode:   (s.usps_test_mode || env.USPS_TEST_MODE || 'true') === 'true',
+      enabled:     isEnabled(s, 'usps', 'USPS_USER_ID'),
+      hasUserId:   present(s.usps_user_id || env.USPS_USER_ID),
+      userIdHint:  mask(s.usps_user_id || env.USPS_USER_ID),
+      hasPassword: present(s.usps_password || env.USPS_PASSWORD),
+      fromZip:     s.usps_from_zip || env.USPS_FROM_ZIP || '',
+      testMode:    (s.usps_test_mode || env.USPS_TEST_MODE || 'true') === 'true',
     },
     chitchats: {
       enabled: isEnabled(s, 'chitchats', 'CHITCHATS_API_KEY'),
@@ -233,9 +247,21 @@ async function getGatewayStatus() {
       keyHint: mask(s.japanpost_api_key || env.JAPANPOST_API_KEY),
     },
     pathao: {
-      enabled: isEnabled(s, 'pathao', 'PATHAO_API_KEY'),
-      hasKey:  present(s.pathao_api_key || env.PATHAO_API_KEY),
-      keyHint: mask(s.pathao_api_key || env.PATHAO_API_KEY),
+      enabled:         isEnabled(s, 'pathao', 'PATHAO_CLIENT_ID'),
+      hasClientId:     present(s.pathao_client_id || env.PATHAO_CLIENT_ID),
+      clientIdHint:    mask(s.pathao_client_id || env.PATHAO_CLIENT_ID),
+      hasClientEmail:  present(s.pathao_client_email || env.PATHAO_CLIENT_EMAIL),
+      hasClientPassword: present(s.pathao_client_password || env.PATHAO_CLIENT_PASSWORD),
+      hasSecret:       present(s.pathao_secret_key || env.PATHAO_SECRET_KEY),
+      hasStoreId:      present(s.pathao_store_id || env.PATHAO_STORE_ID),
+      mode:            ((s.pathao_mode || env.PATHAO_LIVE || 'sandbox') === 'live' ||
+                        (s.pathao_mode || env.PATHAO_LIVE || '') === 'true') ? 'live' : 'sandbox',
+      // Legacy fields kept for backwards compatibility with older admin UI builds
+      hasKey:          present(s.pathao_api_key || env.PATHAO_API_KEY),
+      keyHint:         mask(s.pathao_api_key || env.PATHAO_API_KEY),
+    },
+    cod: {
+      enabled: isEnabled(s, 'cod', 'COD_ENABLED'),
     },
     sendgrid: {
       enabled:    isEnabled(s, 'sendgrid', 'SENDGRID_API_KEY'),
@@ -267,9 +293,12 @@ function isEnabled(settings, key, envKey) {
     case 'auspost':  return !!(settings.auspost_api_key     || env[envKey]);
     case 'nzpost':   return !!(settings.nzpost_api_key      || env[envKey]);
     case 'japanpost':return !!(settings.japanpost_api_key   || env[envKey]);
-    case 'pathao':   return !!(settings.pathao_api_key      || env[envKey]);
+    case 'pathao':   return !!(settings.pathao_client_id    || settings.pathao_api_key || env[envKey] || env.PATHAO_CLIENT_ID);
     case 'sendgrid': return !!(settings.sendgrid_api_key    || env[envKey]);
     case 'twilio':   return !!(settings.twilio_account_sid  || env[envKey]);
+    case 'cod':      return (settings.cod_enabled === 'true') || (env.COD_ENABLED === 'true') ||
+                            // Default: enabled (COD requires no credentials)
+                            (settings.cod_enabled === undefined && !env.COD_ENABLED);
     default: return false;
   }
 }

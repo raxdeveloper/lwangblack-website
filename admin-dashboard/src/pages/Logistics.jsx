@@ -287,6 +287,8 @@ function USPSConfigPanel({ onSaved }) {
 export default function Logistics() {
   const [zones, setZones]             = useState([]);
   const [carriers, setCarriers]       = useState([]);
+  const [gatewayStatus, setGatewayStatus] = useState({});
+  const [carrierTests, setCarrierTests]   = useState({}); // id -> { ok, message, busy }
   const [trackInput, setTrackInput]   = useState('');
   const [trackResult, setTrackResult] = useState(null);
   const [tracking, setTracking]       = useState(false);
@@ -298,18 +300,30 @@ export default function Logistics() {
 
   const load = useCallback(async () => {
     try {
-      const [z, c] = await Promise.all([
+      const [z, c, g] = await Promise.all([
         apiFetch('/logistics/zones').catch(() => ({ zones: [] })),
         apiFetch('/logistics/carriers').catch(() => ({ carriers: [] })),
+        apiFetch('/settings/gateway-status').catch(() => ({ status: {} })),
       ]);
       setZones(z.zones || []);
       setCarriers(c.carriers || []);
+      setGatewayStatus(g.status || {});
     } catch (err) {
       console.error('Logistics load error:', err);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const runCarrierTest = async (id) => {
+    setCarrierTests(prev => ({ ...prev, [id]: { ...(prev[id] || {}), busy: true } }));
+    try {
+      const r = await apiFetch(`/logistics/test/${id}`, { method: 'POST' });
+      setCarrierTests(prev => ({ ...prev, [id]: { ok: !!r.ok, message: r.message, sample: r.sample, busy: false } }));
+    } catch (err) {
+      setCarrierTests(prev => ({ ...prev, [id]: { ok: false, message: err.message, busy: false } }));
+    }
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -494,26 +508,51 @@ export default function Logistics() {
           <h3 className="text-sm font-medium text-zinc-300">All Carriers</h3>
         </div>
         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Object.entries(CARRIER_META).map(([id, meta]) => (
-            <div key={id} className={`bg-zinc-800 rounded-xl p-4 border ${id === 'usps' ? 'border-blue-500/30' : 'border-zinc-700/50'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{meta.flag}</span>
-                  <div>
-                    <p className={`text-sm font-medium ${meta.color}`}>{meta.label}</p>
-                    <p className="text-xs text-zinc-500">{meta.country}</p>
+          {Object.entries(CARRIER_META).map(([id, meta]) => {
+            const enabled = !!gatewayStatus[id]?.enabled;
+            const test = carrierTests[id];
+            return (
+              <div key={id} className={`bg-zinc-800 rounded-xl p-4 border ${enabled ? 'border-green-500/30' : 'border-zinc-700/50'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{meta.flag}</span>
+                    <div>
+                      <p className={`text-sm font-medium ${meta.color}`}>{meta.label}</p>
+                      <p className="text-xs text-zinc-500">{meta.country}</p>
+                    </div>
                   </div>
+                  {enabled
+                    ? <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Configured</span>
+                    : <span className="text-xs bg-zinc-700/50 text-zinc-400 px-2 py-0.5 rounded-full">Not configured</span>}
                 </div>
-                {id === 'usps' && (
-                  <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">Active</span>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <button
+                    onClick={() => runCarrierTest(id)}
+                    disabled={test?.busy}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1 border border-zinc-700 hover:bg-zinc-700 rounded-lg disabled:opacity-50"
+                  >
+                    {test?.busy ? <RefreshCw size={10} className="animate-spin" /> : <CheckCircle size={10} />} Test
+                  </button>
+                  <a
+                    href="/#/settings/shipping"
+                    onClick={e => { e.preventDefault(); window.location.hash = '#/settings'; }}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1 border border-zinc-700 hover:bg-zinc-700 rounded-lg"
+                  >
+                    <Settings size={10} /> Configure
+                  </a>
+                  <a href={meta.website} target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1 ml-auto">
+                    <ExternalLink size={10} />
+                  </a>
+                </div>
+                {test && !test.busy && (
+                  <p className={`text-xs mt-2 ${test.ok ? 'text-green-400' : 'text-amber-400'}`}>
+                    {test.ok ? '✓' : '⚠'} {test.message}
+                  </p>
                 )}
               </div>
-              <a href={meta.website} target="_blank" rel="noopener noreferrer"
-                className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1 mt-1">
-                <ExternalLink size={10} /> {meta.website.replace('https://', '')}
-              </a>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

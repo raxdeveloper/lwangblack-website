@@ -7,25 +7,28 @@
 //   CHITCHATS_CLIENT_ID  — your client ID
 
 const fetch = require('node-fetch');
+const dynConfig = require('./dynamic-config');
 
 const CHITCHATS_BASE = 'https://chitchats.com/api/v1';
 
-function getConfig() {
+async function getConfig() {
+  const c = await dynConfig.getGatewayConfig('chitchats');
   return {
-    apiKey: process.env.CHITCHATS_API_KEY || '',
+    apiKey:   c.apiKey || '',
+    // clientId still env-only for now (not exposed in settings UI yet; can be added)
     clientId: process.env.CHITCHATS_CLIENT_ID || '',
   };
 }
 
-function isConfigured() {
-  return !!getConfig().apiKey && !!getConfig().clientId;
+async function isConfigured() {
+  const { apiKey, clientId } = await getConfig();
+  return !!apiKey && !!clientId;
 }
 
 // ── Rate Calculation ─────────────────────────────────────────────────────────
 async function getRates({ toCountry = 'US', toPostalCode, fromPostalCode, weightGrams = 500, lengthCm = 22, widthCm = 15, heightCm = 8 }) {
-  if (!isConfigured()) return getDemoRates(toCountry);
-
-  const cfg = getConfig();
+  const cfg = await getConfig();
+  if (!cfg.apiKey || !cfg.clientId) return getDemoRates(toCountry);
   try {
     const res = await fetch(`${CHITCHATS_BASE}/clients/${cfg.clientId}/rates`, {
       method: 'POST',
@@ -92,9 +95,8 @@ function getDemoRates(toCountry) {
 
 // ── Create Shipment ──────────────────────────────────────────────────────────
 async function createShipment({ orderId, toAddress, fromAddress, weightGrams = 500, serviceCode, description = 'Lwang Black Coffee' }) {
-  if (!isConfigured()) return getDemoShipment(orderId);
-
-  const cfg = getConfig();
+  const cfg = await getConfig();
+  if (!cfg.apiKey || !cfg.clientId) return getDemoShipment(orderId);
   try {
     const res = await fetch(`${CHITCHATS_BASE}/clients/${cfg.clientId}/shipments`, {
       method: 'POST',
@@ -153,9 +155,8 @@ function getDemoShipment(orderId) {
 
 // ── Tracking ─────────────────────────────────────────────────────────────────
 async function trackShipment(trackingNumber) {
-  if (!isConfigured()) return getDemoTracking(trackingNumber);
-
-  const cfg = getConfig();
+  const cfg = await getConfig();
+  if (!cfg.apiKey || !cfg.clientId) return getDemoTracking(trackingNumber);
   try {
     const res = await fetch(`${CHITCHATS_BASE}/clients/${cfg.clientId}/shipments?tracking_number=${trackingNumber}`, {
       headers: { 'Authorization': cfg.apiKey, 'Accept': 'application/json' },

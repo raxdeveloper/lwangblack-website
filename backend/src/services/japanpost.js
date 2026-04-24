@@ -6,16 +6,16 @@
 // estimated from published price tables. Tracking uses the public endpoint.
 
 const fetch = require('node-fetch');
+const dynConfig = require('./dynamic-config');
 
-function getConfig() {
-  return {
-    apiKey: process.env.JAPANPOST_API_KEY || '',
-    // Japan Post primarily uses weight-based published rate tables
-  };
+async function getConfig() {
+  const c = await dynConfig.getGatewayConfig('japanpost');
+  return { apiKey: c.apiKey || '' };
 }
 
-function isConfigured() {
-  return !!getConfig().apiKey;
+async function isConfigured() {
+  const { apiKey } = await getConfig();
+  return !!apiKey;
 }
 
 // ── Rate Calculation (from published tables) ─────────────────────────────────
@@ -101,10 +101,10 @@ async function trackShipment(trackingNumber) {
   // There's no public REST API — we scrape the tracking page or use the
   // Universal Postal Union tracking API if configured.
   try {
-    if (!isConfigured()) return getDemoTracking(trackingNumber);
+    const cfg = await getConfig();
+    if (!cfg.apiKey) return getDemoTracking(trackingNumber);
 
     // Attempt UPU tracking via Japan Post API
-    const cfg = getConfig();
     const res = await fetch(`https://trackapi.japanpost.jp/api/v1/track?tracking_number=${trackingNumber}`, {
       headers: { 'Authorization': `Bearer ${cfg.apiKey}`, 'Accept': 'application/json' },
       timeout: 10000,

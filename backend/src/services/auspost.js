@@ -6,24 +6,24 @@
 //   AUSPOST_API_KEY — your AusPost developer API key
 
 const fetch = require('node-fetch');
+const dynConfig = require('./dynamic-config');
 
 const AUSPOST_BASE = 'https://digitalapi.auspost.com.au';
 
-function getConfig() {
-  return {
-    apiKey: process.env.AUSPOST_API_KEY || '',
-  };
+async function getConfig() {
+  const c = await dynConfig.getGatewayConfig('auspost');
+  return { apiKey: c.apiKey || '' };
 }
 
-function isConfigured() {
-  return !!getConfig().apiKey;
+async function isConfigured() {
+  const { apiKey } = await getConfig();
+  return !!apiKey;
 }
 
 // ── Rate Calculation ─────────────────────────────────────────────────────────
 async function getRates({ fromPostcode = '3000', toPostcode, toCountry, weightKg = 0.5, lengthCm = 22, widthCm = 15, heightCm = 8 }) {
-  if (!isConfigured()) return getDemoRates(toCountry);
-
-  const cfg = getConfig();
+  const cfg = await getConfig();
+  if (!cfg.apiKey) return getDemoRates(toCountry);
   const isDomestic = !toCountry || toCountry === 'AU';
 
   try {
@@ -86,9 +86,8 @@ function getDemoRates(toCountry) {
 
 // ── Tracking ─────────────────────────────────────────────────────────────────
 async function trackShipment(trackingNumber) {
-  if (!isConfigured()) return getDemoTracking(trackingNumber);
-
-  const cfg = getConfig();
+  const cfg = await getConfig();
+  if (!cfg.apiKey) return getDemoTracking(trackingNumber);
   try {
     const res = await fetch(`${AUSPOST_BASE}/shipping/v1/track?tracking_ids=${trackingNumber}`, {
       headers: { 'AUTH-KEY': cfg.apiKey, 'Accept': 'application/json' },

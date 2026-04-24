@@ -9,20 +9,24 @@
 //   USPS_TEST_MODE — 'true' for sandbox (default in development)
 
 const fetch = require('node-fetch');
+const dynConfig = require('./dynamic-config');
 
 const USPS_BASE_URL = 'https://secure.shippingapis.com/ShippingAPI.dll';
 const USPS_TEST_URL = 'https://stg-secure.shippingapis.com/ShippingAPI.dll'; // staging
 
-function getConfig() {
+async function getConfig() {
+  const c = await dynConfig.getGatewayConfig('usps');
   return {
-    userId:   process.env.USPS_USER_ID   || '',
-    password: process.env.USPS_PASSWORD  || '',
-    isLive:   process.env.USPS_TEST_MODE !== 'true' && process.env.NODE_ENV === 'production',
+    userId:   c.userId   || '',
+    password: c.password || '',
+    fromZip:  c.fromZip  || '10001',
+    // testMode from dynConfig defaults to true; isLive derives from it + env NODE_ENV
+    isLive:   c.testMode === false && process.env.NODE_ENV === 'production',
   };
 }
 
-function isConfigured() {
-  const { userId } = getConfig();
+async function isConfigured() {
+  const { userId } = await getConfig();
   return !!userId && userId !== '';
 }
 
@@ -60,7 +64,7 @@ function extractAllTags(xml, tag) {
 }
 
 async function callUsps(apiName, xmlBody) {
-  const cfg = getConfig();
+  const cfg = await getConfig();
   const url = cfg.isLive ? USPS_BASE_URL : USPS_TEST_URL;
   const response = await fetch(`${url}?API=${apiName}&XML=${encodeURIComponent(xmlBody)}`, {
     method: 'GET',
@@ -77,9 +81,9 @@ async function callUsps(apiName, xmlBody) {
 // Returns USPS domestic rate options for a US-to-US shipment.
 // For international, use RateV4 with international params.
 async function getRates({ fromZip, toZip, weightLbs = 1, weightOz = 0, lengthIn = 12, widthIn = 8, heightIn = 4 }) {
-  if (!isConfigured()) return getDemoRates();
-
-  const cfg = getConfig();
+  const cfg = await getConfig();
+  if (!cfg.userId) return getDemoRates();
+  fromZip = fromZip || cfg.fromZip;
   const ozTotal = Math.round(weightLbs * 16 + weightOz);
   const lbs = Math.floor(ozTotal / 16);
   const oz  = ozTotal % 16;
@@ -156,11 +160,10 @@ function getDemoRates() {
 
 // ── Tracking ─────────────────────────────────────────────────────────────────
 async function trackShipment(trackingNumber) {
-  if (!isConfigured()) {
+  const cfg = await getConfig();
+  if (!cfg.userId) {
     return getDemoTracking(trackingNumber);
   }
-
-  const cfg = getConfig();
   const xml = `
 <TrackFieldRequest USERID="${xmlEscape(cfg.userId)}">
   <Revision>1</Revision>
@@ -232,11 +235,10 @@ function getDemoTracking(trackingNumber) {
 // ── Label Generation (eVS domestic) ─────────────────────────────────────────
 // Returns base64-encoded PDF label and assigned tracking number.
 async function generateLabel({ fromAddress, toAddress, weightLbs = 1, weightOz = 0, serviceType = 'PRIORITY', orderId }) {
-  if (!isConfigured()) {
+  const cfg = await getConfig();
+  if (!cfg.userId) {
     return getDemoLabel(orderId);
   }
-
-  const cfg = getConfig();
   const ozTotal = Math.round(weightLbs * 16 + weightOz);
   const lbs = Math.floor(ozTotal / 16);
   const oz  = ozTotal % 16;
@@ -317,9 +319,8 @@ function getDemoLabel(orderId) {
 
 // ── Address Validation ────────────────────────────────────────────────────────
 async function validateAddress({ street, city, state, zip }) {
-  if (!isConfigured()) return { valid: true, demo: true };
-
-  const cfg = getConfig();
+  const cfg = await getConfig();
+  if (!cfg.userId) return { valid: true, demo: true };
   const xml = `
 <AddressValidateRequest USERID="${xmlEscape(cfg.userId)}">
   <Revision>1</Revision>

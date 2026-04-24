@@ -7,26 +7,28 @@
 //   NZPOST_CLIENT_ID — OAuth2 client ID (for shipping API)
 
 const fetch = require('node-fetch');
+const dynConfig = require('./dynamic-config');
 
 const NZPOST_BASE = 'https://api.nzpost.co.nz';
 
-function getConfig() {
+async function getConfig() {
+  const c = await dynConfig.getGatewayConfig('nzpost');
   return {
-    apiKey: process.env.NZPOST_API_KEY || '',
-    clientId: process.env.NZPOST_CLIENT_ID || '',
+    apiKey:       c.apiKey || '',
+    clientId:     process.env.NZPOST_CLIENT_ID || '',
     clientSecret: process.env.NZPOST_CLIENT_SECRET || '',
   };
 }
 
-function isConfigured() {
-  return !!getConfig().apiKey;
+async function isConfigured() {
+  const { apiKey } = await getConfig();
+  return !!apiKey;
 }
 
 // ── Rate Calculation ─────────────────────────────────────────────────────────
 async function getRates({ toCountry, toPostcode, fromPostcode = '1010', weightKg = 0.5, lengthCm = 22, widthCm = 15, heightCm = 8 }) {
-  if (!isConfigured()) return getDemoRates(toCountry);
-
-  const cfg = getConfig();
+  const cfg = await getConfig();
+  if (!cfg.apiKey) return getDemoRates(toCountry);
   const isDomestic = !toCountry || toCountry === 'NZ';
 
   try {
@@ -87,9 +89,8 @@ function getDemoRates(toCountry) {
 
 // ── Tracking ─────────────────────────────────────────────────────────────────
 async function trackShipment(trackingNumber) {
-  if (!isConfigured()) return getDemoTracking(trackingNumber);
-
-  const cfg = getConfig();
+  const cfg = await getConfig();
+  if (!cfg.apiKey) return getDemoTracking(trackingNumber);
   try {
     const res = await fetch(`${NZPOST_BASE}/tracking/v2/parcels/${trackingNumber}`, {
       headers: { 'Authorization': `Bearer ${cfg.apiKey}`, 'Accept': 'application/json' },
