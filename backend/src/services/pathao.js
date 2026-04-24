@@ -8,29 +8,32 @@
 //   PATHAO_CLIENT_ID    — OAuth2 client ID
 
 const fetch = require('node-fetch');
+const dynConfig = require('./dynamic-config');
 
 const PATHAO_BASE = 'https://api-hermes.pathao.com';
 const PATHAO_SANDBOX = 'https://hermes-api.p-stag.pathao.com';
 
-function getConfig() {
+async function getConfig() {
+  const c = await dynConfig.getGatewayConfig('pathao');
   return {
-    apiKey: process.env.PATHAO_API_KEY || '',
-    secretKey: process.env.PATHAO_SECRET_KEY || '',
-    clientId: process.env.PATHAO_CLIENT_ID || '',
-    clientEmail: process.env.PATHAO_CLIENT_EMAIL || '',
-    clientPassword: process.env.PATHAO_CLIENT_PASSWORD || '',
-    isLive: process.env.PATHAO_LIVE === 'true',
-    storeId: process.env.PATHAO_STORE_ID || '',
+    apiKey:         c.apiKey || '',
+    secretKey:      c.secretKey || '',
+    clientId:       c.clientId || '',
+    clientEmail:    c.clientEmail || '',
+    clientPassword: c.clientPassword || '',
+    isLive:         !!c.isLive,
+    storeId:        c.storeId || '',
   };
 }
 
-function isConfigured() {
-  const cfg = getConfig();
+async function isConfigured() {
+  const cfg = await getConfig();
   return !!(cfg.clientId && cfg.clientEmail && cfg.clientPassword);
 }
 
-function getBaseUrl() {
-  return getConfig().isLive ? PATHAO_BASE : PATHAO_SANDBOX;
+async function getBaseUrl() {
+  const cfg = await getConfig();
+  return cfg.isLive ? PATHAO_BASE : PATHAO_SANDBOX;
 }
 
 // ── Auth Token ───────────────────────────────────────────────────────────────
@@ -40,11 +43,12 @@ let _tokenExpiry = 0;
 async function getAuthToken() {
   if (_authToken && Date.now() < _tokenExpiry) return _authToken;
 
-  const cfg = getConfig();
+  const cfg = await getConfig();
   if (!cfg.clientId) return null;
 
   try {
-    const res = await fetch(`${getBaseUrl()}/aladdin/api/v1/issue-token`, {
+    const baseUrl = await getBaseUrl();
+    const res = await fetch(`${baseUrl}/aladdin/api/v1/issue-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
@@ -71,14 +75,15 @@ async function getAuthToken() {
 
 // ── Rate Calculation ─────────────────────────────────────────────────────────
 async function getRates({ recipientCity, recipientZone, itemWeight = 0.5, itemType = 2 }) {
-  if (!isConfigured()) return getDemoRates(recipientCity);
+  const cfg = await getConfig();
+  if (!(cfg.clientId && cfg.clientEmail && cfg.clientPassword)) return getDemoRates(recipientCity);
 
   const token = await getAuthToken();
   if (!token) return getDemoRates(recipientCity);
 
   try {
-    const cfg = getConfig();
-    const res = await fetch(`${getBaseUrl()}/aladdin/api/v1/merchant/price-plan`, {
+    const baseUrl = await getBaseUrl();
+    const res = await fetch(`${baseUrl}/aladdin/api/v1/merchant/price-plan`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -134,14 +139,15 @@ function getDemoRates(city) {
 
 // ── Create Order (Shipment) ──────────────────────────────────────────────────
 async function createOrder({ orderId, recipientName, recipientPhone, recipientAddress, recipientCity, recipientZone, amountToCollect = 0, itemWeight = 0.5, itemDescription = 'Lwang Black Coffee' }) {
-  if (!isConfigured()) return getDemoOrder(orderId);
+  const cfg = await getConfig();
+  if (!(cfg.clientId && cfg.clientEmail && cfg.clientPassword)) return getDemoOrder(orderId);
 
   const token = await getAuthToken();
   if (!token) return getDemoOrder(orderId);
 
-  const cfg = getConfig();
   try {
-    const res = await fetch(`${getBaseUrl()}/aladdin/api/v1/orders`, {
+    const baseUrl = await getBaseUrl();
+    const res = await fetch(`${baseUrl}/aladdin/api/v1/orders`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -196,13 +202,15 @@ function getDemoOrder(orderId) {
 
 // ── Tracking ─────────────────────────────────────────────────────────────────
 async function trackShipment(trackingNumber) {
-  if (!isConfigured()) return getDemoTracking(trackingNumber);
+  const cfg = await getConfig();
+  if (!(cfg.clientId && cfg.clientEmail && cfg.clientPassword)) return getDemoTracking(trackingNumber);
 
   const token = await getAuthToken();
   if (!token) return getDemoTracking(trackingNumber);
 
   try {
-    const res = await fetch(`${getBaseUrl()}/aladdin/api/v1/orders/${trackingNumber}`, {
+    const baseUrl = await getBaseUrl();
+    const res = await fetch(`${baseUrl}/aladdin/api/v1/orders/${trackingNumber}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',

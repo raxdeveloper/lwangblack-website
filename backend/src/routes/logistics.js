@@ -59,7 +59,8 @@ router.post('/usps/rates/public', async (req, res) => {
     const { toZip, fromZip, weightLbs, weightOz } = req.body;
     if (!toZip) return res.status(400).json({ error: 'toZip required' });
     const rates = await uspsServicePublic.getRates({ toZip, fromZip, weightLbs, weightOz });
-    res.json({ rates, configured: uspsServicePublic.isConfigured() });
+    const configured = await uspsServicePublic.isConfigured();
+    res.json({ rates, configured, enabled: configured });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -69,7 +70,8 @@ router.post('/auspost/rates/public', async (req, res) => {
   try {
     const { toPostcode, toCountry, fromPostcode, weightKg } = req.body;
     const rates = await auspostService.getRates({ toPostcode, toCountry, fromPostcode, weightKg });
-    res.json({ rates, configured: auspostService.isConfigured() });
+    const configured = await auspostService.isConfigured();
+    res.json({ rates, configured, enabled: configured });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -77,7 +79,8 @@ router.post('/nzpost/rates/public', async (req, res) => {
   try {
     const { toCountry, toPostcode, fromPostcode, weightKg } = req.body;
     const rates = await nzpostService.getRates({ toCountry, toPostcode, fromPostcode, weightKg });
-    res.json({ rates, configured: nzpostService.isConfigured() });
+    const configured = await nzpostService.isConfigured();
+    res.json({ rates, configured, enabled: configured });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -85,7 +88,9 @@ router.post('/japanpost/rates/public', async (req, res) => {
   try {
     const { toCountry, weightGrams } = req.body;
     const rates = await japanpostService.getRates({ toCountry, weightGrams });
-    res.json({ rates });
+    const configured = await japanpostService.isConfigured();
+    // Japan Post uses published rate tables as fallback — always returns rates
+    res.json({ rates, configured, enabled: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -93,7 +98,8 @@ router.post('/chitchats/rates/public', async (req, res) => {
   try {
     const { toCountry, toPostalCode, fromPostalCode, weightGrams } = req.body;
     const rates = await chitchatsService.getRates({ toCountry, toPostalCode, fromPostalCode, weightGrams });
-    res.json({ rates, configured: chitchatsService.isConfigured() });
+    const configured = await chitchatsService.isConfigured();
+    res.json({ rates, configured, enabled: configured });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -101,7 +107,8 @@ router.post('/pathao/rates/public', async (req, res) => {
   try {
     const { recipientCity, recipientZone, itemWeight } = req.body;
     const rates = await pathaoService.getRates({ recipientCity, recipientZone, itemWeight });
-    res.json({ rates, configured: pathaoService.isConfigured() });
+    const configured = await pathaoService.isConfigured();
+    res.json({ rates, configured, enabled: configured });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -503,9 +510,52 @@ router.post('/usps/rates', async (req, res) => {
     const { toZip, fromZip, weightLbs, weightOz } = req.body;
     if (!toZip) return res.status(400).json({ error: 'toZip required' });
     const rates = await uspsService.getRates({ toZip, fromZip, weightLbs, weightOz });
-    res.json({ rates, configured: uspsService.isConfigured() });
+    const configured = await uspsService.isConfigured();
+    res.json({ rates, configured });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/logistics/test/:carrier ────────────────────────────────────────
+// Admin-only "Test connection" endpoint for each carrier. Runs a sample rate
+// request against the carrier's live API using whatever credentials are saved.
+// Returns { ok, message, sample } so the admin UI can show a green/red badge.
+router.post('/test/:carrier', requireRole('owner', 'manager'), async (req, res) => {
+  const { carrier } = req.params;
+  const services = {
+    usps:      { svc: uspsService,     payload: { toZip: '90210', weightLbs: 1 } },
+    auspost:   { svc: auspostService,  payload: { toPostcode: '2000', toCountry: 'AU', weightKg: 0.5 } },
+    nzpost:    { svc: nzpostService,   payload: { toCountry: 'NZ', toPostcode: '1010', weightKg: 0.5 } },
+    japanpost: { svc: japanpostService,payload: { toCountry: 'JP', weightGrams: 500 } },
+    chitchats: { svc: chitchatsService,payload: { toCountry: 'US', toPostalCode: '90210', weightGrams: 500 } },
+    pathao:    { svc: pathaoService,   payload: { recipientCity: 1, recipientZone: 1, itemWeight: 0.5 } },
+  };
+  const entry = services[carrier];
+  if (!entry) return res.status(400).json({ ok: false, message: `Unknown carrier: ${carrier}` });
+
+  try {
+    const configured = await entry.svc.isConfigured();
+    if (!configured) {
+      return res.json({
+        ok: false,
+        configured: false,
+        message: `${carrier} is not configured. Save credentials in Admin → Settings → Shipping.`,
+      });
+    }
+    const rates = await entry.svc.getRates(entry.payload);
+    const sample = Array.isArray(rates) ? rates.slice(0, 2) : rates;
+    const isDemo = Array.isArray(rates) && rates.length && rates.every(r => r.demo);
+    return res.json({
+      ok: !isDemo,
+      configured: true,
+      message: isDemo
+        ? `Credentials saved but live rate call fell back to demo rates. Double-check keys / account status.`
+        : `Successfully fetched ${Array.isArray(rates) ? rates.length : 1} live rates from ${carrier}.`,
+      sample,
+    });
+  } catch (err) {
+    return res.status(200).json({ ok: false, configured: true, message: err.message });
   }
 });
 

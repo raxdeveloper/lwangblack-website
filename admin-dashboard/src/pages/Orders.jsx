@@ -133,6 +133,32 @@ function OrderDetail({ order, onClose, onStatusChange }) {
                     <RotateCcw size={13} /> Refund
                   </button>
                 )}
+                {order.status === 'pending' && order.customer?.email && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Send the customer a fresh payment link for this pending order?')) return;
+                      setUpdating(true);
+                      try {
+                        await apiFetch(`/orders/${order.id}/resend-payment-link`, { method: 'POST' }).catch(async () => {
+                          // Backend endpoint may not exist yet — fall back to a notification trigger
+                          await apiFetch('/notifications/send', {
+                            method: 'POST',
+                            body: { orderId: order.id, type: 'payment_retry' },
+                          });
+                        });
+                        alert('Payment retry link sent to customer.');
+                      } catch (err) {
+                        alert(err.message || 'Could not send retry link');
+                      } finally {
+                        setUpdating(false);
+                      }
+                    }}
+                    disabled={updating}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs transition-colors disabled:opacity-50"
+                  >
+                    <RotateCcw size={13} /> Retry payment
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -140,6 +166,11 @@ function OrderDetail({ order, onClose, onStatusChange }) {
           {/* Tracking */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-2">
             <p className="text-xs text-zinc-500 uppercase tracking-wide">Tracking</p>
+            {order.carrierId && (
+              <p className="text-xs text-zinc-400">
+                Carrier: <span className="text-zinc-200 capitalize">{order.carrierId}</span>
+              </p>
+            )}
             <div className="flex gap-2">
               <input
                 value={trackingInput}
@@ -155,6 +186,27 @@ function OrderDetail({ order, onClose, onStatusChange }) {
                 Save
               </button>
             </div>
+            {trackingInput && (
+              <a
+                href={(() => {
+                  const t = encodeURIComponent(trackingInput.trim());
+                  switch (order.carrierId) {
+                    case 'usps':     return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${t}`;
+                    case 'auspost':  return `https://auspost.com.au/mypost/track/#/details/${t}`;
+                    case 'nzpost':   return `https://www.nzpost.co.nz/tools/tracking?trackid=${t}`;
+                    case 'japanpost':return `https://trackings.post.japanpost.jp/services/srv/search/direct?reqCodeNo1=${t}`;
+                    case 'chitchats':return `https://chitchats.com/tracking/${t}`;
+                    case 'pathao':   return `https://pathao.com/np/`;
+                    default:         return `https://www.google.com/search?q=track+${t}`;
+                  }
+                })()}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+              >
+                <ExternalLink size={11} /> Track on carrier site
+              </a>
+            )}
           </div>
 
           {/* Customer */}

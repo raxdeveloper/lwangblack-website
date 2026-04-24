@@ -698,7 +698,7 @@
     }
 
     // ── Build Shopify-style payment radio list ────────────────────────────────
-    function renderPaymentMethods(country) {
+    async function renderPaymentMethods(country) {
       const listEl = document.getElementById('co-payment-list');
       if (!listEl) return;
 
@@ -713,8 +713,9 @@
         <span class="co-pay-icon">${BRAND_ICONS.amex}</span>
         ${BRAND_ICONS.more(2)}`;
 
-      // Method definitions — all use inline icons (always visible)
-      const METHODS = isNepal ? [
+      // Full method catalog — we will filter this by the backend's
+      // /api/payments/methods response so only configured gateways render.
+      const ALL_METHODS = isNepal ? [
         { id:'card',   label:'Credit card',      icons: CARD_ICONS },
         { id:'esewa',  label:'eSewa',             icons:`<span class="co-pay-icon">${BRAND_ICONS.esewa}</span>`,  redirect:"You'll be redirected to eSewa to complete payment." },
         { id:'khalti', label:'Khalti',            icons:`<span class="co-pay-icon">${BRAND_ICONS.khalti}</span>`, redirect:"You'll be redirected to Khalti to complete payment." },
@@ -727,6 +728,34 @@
         { id:'google_pay', label:'Google Pay',  icons:`<span class="co-pay-icon">${BRAND_ICONS.googlepay}</span>`, redirect:"Quick checkout using your saved Google payment." },
         { id:'esewa',      label:'eSewa',        icons:`<span class="co-pay-icon">${BRAND_ICONS.esewa}</span>`,    redirect:"You'll be redirected to eSewa." },
       ];
+
+      // Ask the API which methods are actually configured for this country.
+      // If the call fails, fall back to showing the full list so the page
+      // never ends up empty — the 503 on submit will still surface the error.
+      let enabledIds = null;
+      try {
+        const r = await fetch(`/api/payments/methods?country=${encodeURIComponent(country || 'US')}`);
+        if (r.ok) {
+          const data = await r.json();
+          enabledIds = new Set((data.methods || []).map(m => m.id));
+          // Stripe covers card/apple_pay/google_pay/afterpay on the UI — keep
+          // them visible if stripe is in the enabled set.
+          if (enabledIds.has('stripe')) ['card','apple_pay','google_pay','afterpay'].forEach(id => enabledIds.add(id));
+        }
+      } catch (_) { /* fall back to full list */ }
+
+      const METHODS = enabledIds
+        ? ALL_METHODS.filter(m => enabledIds.has(m.id))
+        : ALL_METHODS;
+
+      if (!METHODS.length) {
+        listEl.innerHTML = `
+          <div style="padding:1rem; color:rgba(255,255,255,0.6); font-size:0.85rem; border:1px dashed rgba(255,255,255,0.15); border-radius:8px;">
+            No payment methods are configured for your region yet. Please contact support@lwangblack.co to complete your order.
+          </div>`;
+        selectedPayment = null;
+        return;
+      }
 
       listEl.innerHTML = METHODS.map((m, i) => `
         <div id="pay-row-${m.id}" onclick="selectPayment('${m.id}')"

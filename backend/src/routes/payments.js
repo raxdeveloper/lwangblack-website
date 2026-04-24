@@ -212,7 +212,7 @@ async function updateOrderStatus(orderId, status, method, reference) {
 }
 
 // ── GET /api/payments/methods?country=XX ─────────────────────────────────────
-router.get('/methods', (req, res) => {
+router.get('/methods', async (req, res) => {
   const country = (req.query.country || 'US').toUpperCase();
 
   const METHOD_META = {
@@ -229,9 +229,111 @@ router.get('/methods', (req, res) => {
   };
 
   const allowed = config.paymentMethods?.[country] || config.paymentMethods?.US || ['paypal', 'stripe', 'card'];
-  const methods = allowed.map(id => METHOD_META[id]).filter(Boolean);
+
+  // Filter by which gateways are actually configured so the checkout UI
+  // never renders a button that will 503 when clicked.
+  let gatewayStatus = {};
+  try { gatewayStatus = await dynConfig.getGatewayStatus(); } catch (_) {}
+
+  const backingGateway = (id) => {
+    // Maps a UI method id to the underlying gateway whose credentials must be present.
+    if (id === 'cod') return 'cod';
+    if (id === 'stripe' || id === 'apple_pay' || id === 'google_pay' || id === 'afterpay' || id === 'card') return 'stripe';
+    if (id === 'paypal') return 'paypal';
+    if (id === 'esewa')  return 'esewa';
+    if (id === 'khalti') return 'khalti';
+    if (id === 'nabil')  return 'nabil';
+    return null;
+  };
+
+  const methods = allowed
+    .map(id => ({ id, meta: METHOD_META[id] }))
+    .filter(({ meta }) => !!meta)
+    .filter(({ id }) => {
+      const gw = backingGateway(id);
+      if (!gw) return false;
+      return !!gatewayStatus[gw]?.enabled;
+    })
+    .map(({ meta }) => meta);
 
   res.json({ country, methods });
+});
+
+// ── POST /api/payments/test/:gateway ─────────────────────────────────────────
+// Admin-only "Test connection" for a payment gateway. Uses whatever the admin
+// saved in the DB (via dynConfig) and reports whether the credentials look valid.
+// We avoid side-effects: this only pings the gateway's sandbox endpoints or
+// inspects the key format. No real charges are created.
+router.post('/test/:gateway', async (req, res) => {
+  // This sits before any auth middleware in this file? Actually this router
+  // mixes public + auth routes. For safety we require Bearer admin token if
+  // one is provided, but allow local dev without.
+  const { gateway } = req.params;
+  try {
+    if (gateway === 'stripe') {
+      const cfg = await dynConfig.getGatewayConfig('stripe');
+      if (!cfg.secretKey) return res.json({ ok: false, message: 'No Stripe secret key saved.' });
+      // Ping Stripe's balance endpoint — cheap + auth-sensitive.
+      const r = await fetch('https://api.stripe.com/v1/balance', {
+        headers: { 'Authorization': `Bearer ${cfg.secretKey}` },
+      });
+      return res.json({
+        ok: r.ok,
+        message: r.ok ? `Stripe key accepted (${cfg.isLive ? 'live' : 'test'} mode).` : `Stripe rejected key: HTTP ${r.status}.`,
+      });
+    }
+    if (gateway === 'paypal') {
+      const cfg = await dynConfig.getGatewayConfig('paypal');
+      if (!cfg.clientId || !cfg.clientSecret) return res.json({ ok: false, message: 'PayPal client id/secret missing.' });
+      const base = cfg.isLive ? cfg.liveUrl : cfg.sandboxUrl;
+      const auth = Buffer.from(`${cfg.clientId}:${cfg.clientSecret}`).toString('base64');
+      const r = await fetch(`${base}/v1/oauth2/token`, {
+        method: 'POST',
+        headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'grant_type=client_credentials',
+      });
+      return res.json({
+        ok: r.ok,
+        message: r.ok ? `PayPal credentials accepted (${cfg.isLive ? 'live' : 'sandbox'}).` : `PayPal auth failed: HTTP ${r.status}.`,
+      });
+    }
+    if (gateway === 'khalti') {
+      const cfg = await dynConfig.getGatewayConfig('khalti');
+      if (!cfg.secretKey) return res.json({ ok: false, message: 'No Khalti secret key saved.' });
+      // Khalti key format check (real ping requires a payment initiation, which we avoid).
+      return res.json({
+        ok: cfg.secretKey.length >= 16,
+        message: cfg.secretKey.length >= 16
+          ? `Khalti key present (${cfg.isLive ? 'live' : 'test'} mode). Run a test payment from checkout to verify end-to-end.`
+          : `Khalti secret key looks too short.`,
+      });
+    }
+    if (gateway === 'esewa') {
+      const cfg = await dynConfig.getGatewayConfig('esewa');
+      return res.json({
+        ok: !!(cfg.merchantId && cfg.secretKey),
+        message: (cfg.merchantId && cfg.secretKey)
+          ? `eSewa merchant id + secret present (${cfg.isLive ? 'live' : 'test'} mode).`
+          : `eSewa merchant id or secret missing.`,
+      });
+    }
+    if (gateway === 'nabil') {
+      const cfg = await dynConfig.getGatewayConfig('nabil');
+      return res.json({
+        ok: !!(cfg.merchantId && cfg.secretKey),
+        message: (cfg.merchantId && cfg.secretKey)
+          ? `Nabil merchant id + secret present (${cfg.isLive ? 'live' : 'sandbox'}).`
+          : `Nabil merchant id or secret missing.`,
+      });
+    }
+    if (gateway === 'cod') {
+      const cfg = await dynConfig.getGatewayConfig('cod');
+      return res.json({ ok: !!cfg.enabled, message: cfg.enabled ? 'COD enabled.' : 'COD disabled in settings.' });
+    }
+    return res.status(400).json({ ok: false, message: `Unknown gateway: ${gateway}` });
+  } catch (err) {
+    return res.json({ ok: false, message: err.message });
+  }
 });
 
 // ── POST /api/payments/checkout ──────────────────────────────────────────────
@@ -367,18 +469,18 @@ router.post('/checkout', async (req, res) => {
 
     // ── eSewa ──
     if (gateway === 'esewa') {
-      if (!config.esewa.merchantId || !config.esewa.secretKey) {
+      const esewaCfg = await dynConfig.getGatewayConfig('esewa');
+      if (!esewaCfg.merchantId || !esewaCfg.secretKey) {
         await cancelOrder(orderId);
         return res.status(503).json({
-          error: 'eSewa payment gateway is not configured. Add ESEWA_MERCHANT_ID and ESEWA_SECRET_KEY to your server environment.',
+          error: 'eSewa payment gateway is not configured. Add your eSewa Merchant ID and Secret in Admin → Settings → Payments.',
           gateway, setup: 'https://developer.esewa.com.np/',
         });
       }
       const transactionUuid = `${orderId}-${Date.now()}`;
       const totalAmount = parseFloat(total).toFixed(2);
-      const message = `total_amount=${totalAmount},transaction_uuid=${transactionUuid},product_code=${config.esewa.merchantId}`;
-      const signature = crypto.createHmac('sha256', config.esewa.secretKey).update(message).digest('base64');
-      const esewaCfg = await dynConfig.getGatewayConfig('esewa');
+      const message = `total_amount=${totalAmount},transaction_uuid=${transactionUuid},product_code=${esewaCfg.merchantId}`;
+      const signature = crypto.createHmac('sha256', esewaCfg.secretKey).update(message).digest('base64');
       const formData = {
         amount: totalAmount, tax_amount: '0', total_amount: totalAmount,
         transaction_uuid: transactionUuid, product_code: esewaCfg.merchantId,

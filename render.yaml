@@ -46,6 +46,25 @@ services:
         sync: false
       - key: ESEWA_SECRET_KEY
         sync: false
+      - key: ESEWA_MODE
+        sync: false
+      # Khalti (Nepal)
+      - key: KHALTI_SECRET_KEY
+        sync: false
+      - key: KHALTI_PUBLIC_KEY
+        sync: false
+      - key: KHALTI_MODE
+        sync: false
+      # Nabil Bank (Nepal)
+      - key: NABIL_MERCHANT_ID
+        sync: false
+      - key: NABIL_SECRET_KEY
+        sync: false
+      - key: NABIL_MODE
+        sync: false
+      # COD (Nepal only)
+      - key: COD_ENABLED
+        sync: false
       # Shopify (Storefront + Admin + webhooks)
       - key: SHOPIFY_ENABLED
         sync: false
@@ -59,20 +78,48 @@ services:
         sync: false
       - key: SHOPIFY_API_VERSION
         value: "2024-10"
-      # Logistics / carriers (set only what you use)
+      # Logistics / carriers — optional env fallbacks.
+      # Primary config lives in the admin DB (Admin → Settings → Shipping);
+      # these env vars are used only when the DB has no value for a key.
+      # USPS (US)
       - key: USPS_USER_ID
         sync: false
+      - key: USPS_PASSWORD
+        sync: false
+      - key: USPS_FROM_ZIP
+        sync: false
+      - key: USPS_TEST_MODE
+        sync: false
+      # Australia Post (AU + international)
       - key: AUSPOST_API_KEY
+        sync: false
+      # NZ Post
+      - key: NZPOST_API_KEY
         sync: false
       - key: NZPOST_CLIENT_ID
         sync: false
+      - key: NZPOST_CLIENT_SECRET
+        sync: false
+      # Japan Post
       - key: JAPANPOST_API_KEY
         sync: false
-      - key: CHITCHATS_API_TOKEN
+      # Chit Chats (Canada)
+      - key: CHITCHATS_API_KEY
         sync: false
+      - key: CHITCHATS_CLIENT_ID
+        sync: false
+      # Pathao (Nepal) — OAuth2 requires all 5 fields
       - key: PATHAO_CLIENT_ID
         sync: false
-      - key: PATHAO_CLIENT_SECRET
+      - key: PATHAO_SECRET_KEY
+        sync: false
+      - key: PATHAO_CLIENT_EMAIL
+        sync: false
+      - key: PATHAO_CLIENT_PASSWORD
+        sync: false
+      - key: PATHAO_STORE_ID
+        sync: false
+      - key: PATHAO_LIVE
         sync: false
 
   # Long-running worker (webhook DLQ / scheduled jobs — extend src/workers/queue.js)
