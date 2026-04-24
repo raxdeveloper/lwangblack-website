@@ -1,7 +1,15 @@
 /**
- * Overrides checkout submitPayment to use /api/store (orders + payment intents).
- * Expects existing checkout DOM: co-fname, co-lname, co-email, co-phone, co-street, co-city, co-postal, co-country
- * and globals: cartItems, cartTotals, selectedPayment, selectedShipping, shippingRates, tipAmount, appliedDiscount
+ * Alternative checkout flow exposed on `window.lwbCheckoutSubmit`.
+ *
+ * The canonical checkout now lives in `checkout.html` (the inline
+ * `submitPayment()`), which routes through `/api/payments/checkout`
+ * for PayPal / COD / eSewa / Khalti and uses `/api/payments/stripe-intent`
+ * for inline Stripe Elements. This file used to override
+ * `window.submitPayment` but no longer does — keeping the helper here
+ * in case legacy buttons still reference `window.lwbCheckoutSubmit`.
+ *
+ * Expected DOM: co-fname, co-lname, co-email, co-phone, co-street, co-city, co-postal, co-country
+ * Expected globals: cartItems, cartTotals, selectedPayment, selectedShipping, shippingRates, tipAmount, appliedDiscount
  */
 (function () {
   function apiBase() {
@@ -145,14 +153,13 @@
             return `${sym}${totalAmount.toFixed(dec)}`;
           })();
 
+    const paySel = String(window.selectedPayment || '').toLowerCase();
     const paymentMethod =
-      window.selectedPayment === 'cod'
-        ? 'cod'
-        : window.selectedPayment === 'esewa'
-          ? 'esewa'
-          : window.selectedPayment === 'khalti'
-            ? 'khalti'
-            : 'stripe';
+      paySel === 'cod'    ? 'cod' :
+      paySel === 'esewa'  ? 'esewa' :
+      paySel === 'khalti' ? 'khalti' :
+      paySel === 'paypal' ? 'paypal' :
+                            'stripe';
 
     const basePayload = {
       customer: { ...cust, name: `${cust.firstName} ${cust.lastName}`.trim() },
@@ -222,17 +229,59 @@
         throw new Error('No checkout URL from Shopify');
       }
 
+      // Unified checkout payload used by /api/payments/checkout for
+      // PayPal + COD (+ other hosted flows). Stripe Elements / eSewa /
+      // Khalti keep their dedicated endpoints for their inline flows.
+      const unifiedBody = () => {
+        const totals = window.LB_CART.getTotals();
+        const currencyMap = { AU: 'AUD', US: 'USD', CA: 'CAD', JP: 'JPY', NZ: 'NZD', GB: 'GBP', EU: 'EUR', NP: 'NPR' };
+        return {
+          customer: { ...cust, email: cust.email, name: `${cust.firstName} ${cust.lastName}`.trim() },
+          items: lines.map(l => ({ name: l.name, variant: l.variantTitle, price: l.price, qty: l.qty, image: l.image })),
+          country: region,
+          currency: currencyMap[region] || 'USD',
+          symbol: totals.symbol || '$',
+          subtotal,
+          shipping: shipPrice,
+          total: totalAmount,
+          carrier: rate.carrierId || rate.carrier || null,
+          discountCode: window.appliedDiscount?.code || null,
+          discountAmount: window.appliedDiscount?.amount || 0,
+        };
+      };
+
       if (paymentMethod === 'cod') {
-        const data = await postOrder({ ...basePayload, paymentMethod: 'cod' });
-        if (!data.success) throw new Error(data.error || 'Order failed');
+        const res = await fetch(`${apiBase()}/payments/checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gateway: 'cod', ...unifiedBody() }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'Order failed');
         window.dispatchEvent(
-          new CustomEvent('lwb-order-placed', { detail: { orderNumber: data.orderNumber, method: 'cod' } })
+          new CustomEvent('lwb-order-placed', { detail: { orderNumber: data.orderId, method: 'cod' } })
         );
-        try {
-          window.LB_CART._showToast('Order placed — preparing confirmation…', 'success');
-        } catch (_) {}
+        try { window.LB_CART._showToast(data.message || 'Order placed — pay on delivery.', 'success'); } catch (_) {}
         window.LB_CART.clear();
-        window.location.href = `order-confirmation.html?order=${encodeURIComponent(data.orderNumber)}`;
+        window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(data.orderId)}&method=cod`;
+        return;
+      }
+
+      if (paymentMethod === 'paypal') {
+        const res = await fetch(`${apiBase()}/payments/checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gateway: 'paypal', ...unifiedBody() }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'PayPal init failed');
+        if (!data.approvalUrl) throw new Error('PayPal did not return an approval URL');
+        // PayPal capture is handled server-side (return_url contains orderId).
+        // After approval PayPal sends the buyer back through
+        // /api/payments/paypal-capture which captures the payment and
+        // redirects to order-confirmation.html?order_id=...&method=paypal.
+        window.LB_CART.clear();
+        window.location.href = data.approvalUrl;
         return;
       }
 
@@ -342,7 +391,7 @@
           window.LB_CART._showToast('Payment confirmed — saving your order…', 'success');
         } catch (_) {}
         window.LB_CART.clear();
-        window.location.href = `order-confirmation.html?order=${encodeURIComponent(ord.orderNumber)}`;
+        window.location.href = `order-confirmation.html?order_id=${encodeURIComponent(ord.orderNumber)}&method=stripe`;
         return;
       }
 
@@ -355,13 +404,19 @@
     }
   };
 
+  // Intentionally NOT overriding window.submitPayment anymore.
+  //
+  // The canonical checkout path is the inline `submitPayment()` defined in
+  // checkout.html, which routes through `/api/payments/checkout` and
+  // `/api/payments/stripe-intent`, handles PayPal / COD / Stripe / eSewa /
+  // Khalti, and redirects to `order-confirmation.html?order_id=...`.
+  //
+  // `lwbCheckoutSubmit` remains exposed on `window` for custom integrations
+  // (Shopify fallback, older buttons) but is no longer wired up by default.
+  // This removes the dual-checkout race that previously caused divergent
+  // URL params (`?order=` vs `?order_id=`) and bypassed the unified
+  // backend checkout endpoint.
   document.addEventListener('DOMContentLoaded', () => {
-    if (typeof window.submitPayment === 'function') {
-      window._submitPaymentOriginal = window.submitPayment;
-    }
-    window.submitPayment = function () {
-      return window.lwbCheckoutSubmit();
-    };
     window.addEventListener('lwb-order-event', (ev) => {
       const d = ev.detail || {};
       if (d.status === 'paid' && window.LB_CART?._showToast) {

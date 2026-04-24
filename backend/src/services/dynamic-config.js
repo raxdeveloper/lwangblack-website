@@ -121,20 +121,29 @@ async function getGatewayConfig(gateway) {
 
     case 'auspost':
       return {
-        apiKey:  s.auspost_api_key || env.AUSPOST_API_KEY || '',
-        enabled: isEnabled(s, 'auspost', 'AUSPOST_API_KEY'),
+        apiKey:        s.auspost_api_key         || env.AUSPOST_API_KEY         || '',
+        // MyPost Business — required for real label generation via /shipping/v1.
+        accountNumber: s.auspost_account_number  || env.AUSPOST_ACCOUNT_NUMBER  || '',
+        password:      s.auspost_password        || env.AUSPOST_PASSWORD        || '',
+        enabled:       isEnabled(s, 'auspost', 'AUSPOST_API_KEY'),
       };
 
     case 'nzpost':
       return {
-        apiKey:  s.nzpost_api_key || env.NZPOST_API_KEY || '',
-        enabled: isEnabled(s, 'nzpost', 'NZPOST_API_KEY'),
+        apiKey:       s.nzpost_api_key       || env.NZPOST_API_KEY       || '',
+        // OAuth2 credentials — required for eShip / Parcel Label API.
+        clientId:     s.nzpost_client_id     || env.NZPOST_CLIENT_ID     || '',
+        clientSecret: s.nzpost_client_secret || env.NZPOST_CLIENT_SECRET || '',
+        siteCode:     s.nzpost_site_code     || env.NZPOST_SITE_CODE     || '',
+        enabled:      isEnabled(s, 'nzpost', 'NZPOST_API_KEY'),
       };
 
     case 'japanpost':
       return {
+        // JP Post has no public label API; this key only covers the
+        // optional live-tracking endpoint. Labels are generated locally.
         apiKey:  s.japanpost_api_key || env.JAPANPOST_API_KEY || '',
-        enabled: isEnabled(s, 'japanpost', 'JAPANPOST_API_KEY'),
+        enabled: (s.japanpost_enabled !== 'false') && (env.JAPANPOST_ENABLED !== 'false'),
       };
 
     case 'pathao':

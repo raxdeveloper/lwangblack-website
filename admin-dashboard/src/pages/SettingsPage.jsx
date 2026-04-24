@@ -772,19 +772,31 @@ export default function SettingsPage() {
             <GatewayCard
               logo={LOGOS.auspost}
               name="Australia Post (AU + International)"
-              description="Primary carrier for Australia and all other international countries."
+              description="Primary carrier for Australia and all other international countries. Rate quotes use the developer API key; real label generation requires a MyPost Business account number + password."
               status={gatewayStatus.auspost?.enabled}
               docUrl="https://auspost.com.au/"
             >
               <SecretInput
-                label="API Key"
+                label="Developer API Key (AUTH-KEY)"
                 value={pending.auspost_api_key || ''}
                 onChange={v => setField('auspost_api_key', v)}
                 placeholder="auspost_api_key"
                 hint={gatewayStatus.auspost?.keyHint}
               />
+              <SecretInput
+                label="MyPost Business Account Number"
+                value={pending.auspost_account_number || ''}
+                onChange={v => setField('auspost_account_number', v)}
+                placeholder="0012345678"
+              />
+              <SecretInput
+                label="MyPost Business Password"
+                value={pending.auspost_password || ''}
+                onChange={v => setField('auspost_password', v)}
+                placeholder="password"
+              />
               <div className="flex items-center gap-3 flex-wrap">
-                <SaveBtn keys={['auspost_api_key']} label="Save Australia Post settings" />
+                <SaveBtn keys={['auspost_api_key','auspost_account_number','auspost_password']} label="Save Australia Post settings" />
                 <TestBtn kind="carrier" id="auspost" />
               </div>
             </GatewayCard>
@@ -793,7 +805,7 @@ export default function SettingsPage() {
             <GatewayCard
               logo={LOGOS.nzpost}
               name="NZ Post (New Zealand)"
-              description="Dedicated carrier for New Zealand shipments."
+              description="Dedicated carrier for New Zealand shipments. Rate quotes use the API key; label generation uses OAuth2 (Client ID + Client Secret + Site Code)."
               status={gatewayStatus.nzpost?.enabled}
               docUrl="https://www.nzpost.co.nz/"
             >
@@ -804,8 +816,26 @@ export default function SettingsPage() {
                 placeholder="nzpost_api_key"
                 hint={gatewayStatus.nzpost?.keyHint}
               />
+              <SecretInput
+                label="OAuth Client ID"
+                value={pending.nzpost_client_id || ''}
+                onChange={v => setField('nzpost_client_id', v)}
+                placeholder="nzpost_client_id"
+              />
+              <SecretInput
+                label="OAuth Client Secret"
+                value={pending.nzpost_client_secret || ''}
+                onChange={v => setField('nzpost_client_secret', v)}
+                placeholder="nzpost_client_secret"
+              />
+              <SecretInput
+                label="Site Code"
+                value={pending.nzpost_site_code || ''}
+                onChange={v => setField('nzpost_site_code', v)}
+                placeholder="e.g. 1234"
+              />
               <div className="flex items-center gap-3 flex-wrap">
-                <SaveBtn keys={['nzpost_api_key']} label="Save NZ Post settings" />
+                <SaveBtn keys={['nzpost_api_key','nzpost_client_id','nzpost_client_secret','nzpost_site_code']} label="Save NZ Post settings" />
                 <TestBtn kind="carrier" id="nzpost" />
               </div>
             </GatewayCard>
@@ -814,12 +844,15 @@ export default function SettingsPage() {
             <GatewayCard
               logo={LOGOS.japanpost}
               name="Japan Post (Japan)"
-              description="Dedicated carrier for Japan shipments."
+              description="Japan Post publishes no public label API — labels are generated locally as a printable PDF that you affix alongside the official JP Post counter slip. Tracking numbers are entered per-order when shipping."
               status={gatewayStatus.japanpost?.enabled}
               docUrl="https://www.post.japanpost.jp/"
             >
+              <div className="text-xs text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                No API credentials are required for JP Post label generation. The storefront uses published rate tables for quotes, and the admin's Ship modal prompts you to paste the tracking number obtained from the JP Post counter (or Click Post).
+              </div>
               <SecretInput
-                label="API Key"
+                label="Tracking API Key (optional — for live tracking only)"
                 value={pending.japanpost_api_key || ''}
                 onChange={v => setField('japanpost_api_key', v)}
                 placeholder="japanpost_api_key"
