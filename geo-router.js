@@ -25,12 +25,12 @@ const REGION_DATA = {
   AU: {
     code: 'AU', slug: 'au', name: 'Australia', flag: '🇦🇺', flagEmoji: '🇦🇺',
     currency: 'AUD', currencySymbol: 'A$',
-    phone: '+61 2 8005 7000', whatsapp: '+61280057000',
+    phone: '+61 452 523 324', whatsapp: '+61452523324',
+    email: 'brewed@lwangblack.co',
     address: 'Sydney, NSW, Australia',
     heroTitle: 'PREMIUM CLOVE COFFEE,\nDELIVERED ACROSS AUSTRALIA.',
     heroSubtitle: 'Specialty Arabica fused with hand-selected cloves. No fillers, no additives — bold, smooth, and unmistakably Lwang Black.',
     heroCtaLabel: 'Shop Now',
-    practicePriority: ['commercial', 'migration', 'corporate', 'property'],
     accent: '#C9A84C',
     paymentMethods: ['Stripe', 'PayPal', 'Apple Pay', 'Google Pay', 'Afterpay'],
     carrier: 'Australia Post',
@@ -39,12 +39,12 @@ const REGION_DATA = {
   NP: {
     code: 'NP', slug: 'np', name: 'Nepal', flag: '🇳🇵', flagEmoji: '🇳🇵',
     currency: 'NPR', currencySymbol: 'रू',
-    phone: '+977 1 5970 800', whatsapp: '+97715970800',
-    address: 'Durbarmarg, Kathmandu 44600, Nepal',
+    phone: '+977 9857 059 386', whatsapp: '+61452523324',
+    email: 'brewed@lwangblack.co',
+    address: 'Namuna Basti, Chapagaun, Godawari-11, Lalitpur, Nepal',
     heroTitle: 'विशेष क्लोभ कफी —\nनेपालमै तयार।',
     heroSubtitle: 'हस्तचयन गरिएका लवङ र विशेषश्रेणीको अरेबिका कफीको मिश्रण। शुद्ध, सशक्त, र पूर्ण नेपाली।',
     heroCtaLabel: 'अहिले किन्नुहोस्',
-    practicePriority: ['migration', 'student', 'family', 'commercial'],
     accent: '#C9A84C',
     paymentMethods: ['eSewa', 'Khalti', 'Nabil Bank', 'Cash on Delivery'],
     carrier: 'Pathao',
@@ -53,12 +53,12 @@ const REGION_DATA = {
   US: {
     code: 'US', slug: 'us', name: 'United States', flag: '🇺🇸', flagEmoji: '🇺🇸',
     currency: 'USD', currencySymbol: '$',
-    phone: '+1 (415) 800 7000', whatsapp: '+14158007000',
+    phone: '+61 452 523 324', whatsapp: '+61452523324',
+    email: 'brewed@lwangblack.co',
     address: 'Ships from Sydney to all 50 states · USPS',
     heroTitle: 'BOLD CLOVE COFFEE,\nSHIPPED ACROSS AMERICA.',
     heroSubtitle: 'Specialty-grade Arabica fused with hand-selected cloves. USPS delivery in 3–7 business days. Pay in USD.',
     heroCtaLabel: 'Shop Now',
-    practicePriority: ['commercial', 'corporate', 'migration', 'property'],
     accent: '#C9A84C',
     paymentMethods: ['Stripe', 'PayPal', 'Apple Pay', 'Google Pay', 'Afterpay'],
     carrier: 'USPS',
@@ -67,12 +67,12 @@ const REGION_DATA = {
   GB: {
     code: 'GB', slug: 'uk', name: 'United Kingdom', flag: '🇬🇧', flagEmoji: '🇬🇧',
     currency: 'GBP', currencySymbol: '£',
-    phone: '+44 20 7946 0800', whatsapp: '+442079460800',
+    phone: '+61 452 523 324', whatsapp: '+61452523324',
+    email: 'brewed@lwangblack.co',
     address: 'International shipping · VAT included',
     heroTitle: 'PREMIUM CLOVE COFFEE,\nDELIVERED ACROSS THE UK.',
     heroSubtitle: 'Hand-roasted Arabica with whole-clove infusion. International delivery in 7–14 business days. GBP checkout.',
     heroCtaLabel: 'Shop Now',
-    practicePriority: ['commercial', 'dispute', 'corporate', 'migration'],
     accent: '#C9A84C',
     paymentMethods: ['Stripe', 'PayPal', 'Apple Pay', 'Google Pay'],
     carrier: 'Royal Mail / Australia Post International',
@@ -81,12 +81,12 @@ const REGION_DATA = {
   EU: {
     code: 'EU', slug: 'eu', name: 'Eurozone', flag: '🇪🇺', flagEmoji: '🇪🇺',
     currency: 'EUR', currencySymbol: '€',
-    phone: '+353 1 568 0000', whatsapp: '+35315680000',
+    phone: '+61 452 523 324', whatsapp: '+61452523324',
+    email: 'brewed@lwangblack.co',
     address: 'EU-wide shipping — VAT where applicable',
     heroTitle: 'PREMIUM COFFEE\nACROSS EUROPE.',
     heroSubtitle: 'Bold flavour, ethical sourcing, and secure EUR checkout with Stripe and PayPal.',
     heroCtaLabel: 'Shop the range',
-    practicePriority: ['commercial', 'corporate', 'migration', 'property'],
     accent: '#C9A84C',
     paymentMethods: ['Stripe', 'PayPal', 'Apple Pay', 'Google Pay'],
     carrier: 'Australia Post International',
@@ -95,12 +95,12 @@ const REGION_DATA = {
   JP: {
     code: 'JP', slug: 'jp', name: 'Japan', flag: '🇯🇵', flagEmoji: '🇯🇵',
     currency: 'JPY', currencySymbol: '¥',
-    phone: '+81 3 6800 7000', whatsapp: '+81368007000',
+    phone: '+61 452 523 324', whatsapp: '+61452523324',
+    email: 'brewed@lwangblack.co',
     address: 'Japan Post EMS · all 47 prefectures',
     heroTitle: '本格クローブコーヒー、\n日本全国へお届け。',
     heroSubtitle: '厳選されたアラビカ豆と手摘みクローブの融合。Japan Post EMSで5〜10営業日以内にお届け。',
     heroCtaLabel: '今すぐ購入',
-    practicePriority: ['commercial', 'corporate', 'migration', 'family'],
     accent: '#C9A84C',
     paymentMethods: ['Stripe', 'PayPal', 'Google Pay'],
     carrier: 'Japan Post',
@@ -109,12 +109,12 @@ const REGION_DATA = {
   NZ: {
     code: 'NZ', slug: 'nz', name: 'New Zealand', flag: '🇳🇿', flagEmoji: '🇳🇿',
     currency: 'NZD', currencySymbol: 'NZ$',
-    phone: '+64 9 800 7000', whatsapp: '+6498007000',
+    phone: '+61 452 523 324', whatsapp: '+61452523324',
+    email: 'brewed@lwangblack.co',
     address: 'NZ Post · nationwide tracked delivery',
     heroTitle: 'BOLD CLOVE COFFEE,\nDELIVERED ACROSS NEW ZEALAND.',
     heroSubtitle: 'Specialty Arabica with hand-selected cloves. NZ Post tracked delivery in 3–6 business days. NZD checkout.',
     heroCtaLabel: 'Shop Now',
-    practicePriority: ['migration', 'family', 'commercial', 'property'],
     accent: '#C9A84C',
     paymentMethods: ['Stripe', 'PayPal', 'Apple Pay', 'Google Pay', 'Afterpay'],
     carrier: 'NZ Post',
@@ -123,12 +123,12 @@ const REGION_DATA = {
   CN: {
     code: 'CN', slug: 'cn', name: 'China', flag: '🇨🇳', flagEmoji: '🇨🇳',
     currency: 'CNY', currencySymbol: '¥',
-    phone: '+86 21 6800 7000', whatsapp: '+862168007000',
+    phone: '+61 452 523 324', whatsapp: '+61452523324',
+    email: 'brewed@lwangblack.co',
     address: 'International shipping via Australia Post',
     heroTitle: '精品丁香咖啡,\n全球直邮。',
     heroSubtitle: '精选阿拉比卡咖啡豆与手选丁香的完美融合。由澳大利亚直邮,支持人民币结算。',
     heroCtaLabel: '立即购买',
-    practicePriority: ['commercial', 'migration', 'corporate', 'property'],
     accent: '#C9A84C',
     paymentMethods: ['Stripe', 'PayPal'],
     carrier: 'Australia Post International',
@@ -137,27 +137,17 @@ const REGION_DATA = {
   CA: {
     code: 'CA', slug: 'ca', name: 'Canada', flag: '🇨🇦', flagEmoji: '🇨🇦',
     currency: 'CAD', currencySymbol: 'CA$',
-    phone: '+1 (416) 800 7000', whatsapp: '+14168007000',
+    phone: '+61 452 523 324', whatsapp: '+61452523324',
+    email: 'brewed@lwangblack.co',
     address: 'Chit Chats · cross-border to all provinces',
     heroTitle: 'YOUR PREMIUM\nCANADIAN ROAST.',
     heroSubtitle: 'Bold flavour, pure clove fusion, and real health benefits — shipped directly to you across Canada with Chit Chats.',
     heroCtaLabel: 'Shop Now',
-    practicePriority: ['commercial', 'migration', 'corporate', 'property'],
     accent: '#C9A84C',
     paymentMethods: ['Stripe', 'PayPal', 'Apple Pay', 'Google Pay'],
     carrier: 'Chit Chats',
     estimatedDelivery: '4–8 business days',
   },
-};
-
-const PRACTICE_AREAS = {
-  migration: { id: 'migration', icon: '✈', title: 'Migration Law', desc: 'Skilled visas, partner, student, employer-sponsored, and permanent residency. Expert guidance for every pathway.' },
-  commercial: { id: 'commercial', icon: '⚖', title: 'Commercial Law', desc: 'Contracts, M&A, trade compliance, and cross-border advisory for businesses of all sizes.' },
-  corporate: { id: 'corporate', icon: '🏛', title: 'Corporate Governance', desc: 'Shareholder agreements, board advisory, and corporate restructuring with precision and clarity.' },
-  family: { id: 'family', icon: '👨‍👩‍👧', title: 'Family Law', desc: 'Divorce, parenting orders, property settlements, and international family matters handled with care.' },
-  property: { id: 'property', icon: '🏢', title: 'Property & Conveyancing', desc: 'Residential and commercial property transactions, foreign investment advice, and land development.' },
-  student: { id: 'student', icon: '🎓', title: 'Student Visas', desc: 'Australian student visa applications, extensions, and graduate work permit pathways.' },
-  dispute: { id: 'dispute', icon: '🔍', title: 'Dispute Resolution', desc: 'Commercial litigation, mediation, arbitration, and enforcement of judgments globally.' },
 };
 
 const EU_COUNTRY_CODES = new Set([
@@ -330,7 +320,6 @@ const GeoRouter = {
 // Globals
 window.GeoRouter = GeoRouter;
 window.REGION_DATA = REGION_DATA;
-window.PRACTICE_AREAS = PRACTICE_AREAS;
 window.CODE_TO_SLUG = CODE_TO_SLUG;
 window.SLUG_TO_CODE = SLUG_TO_CODE;
 window.IS_BOT = IS_BOT;

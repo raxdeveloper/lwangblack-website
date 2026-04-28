@@ -121,6 +121,34 @@ services:
         sync: false
       - key: PATHAO_LIVE
         sync: false
+      # Social media — Facebook / Instagram / TikTok
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: FACEBOOK_PAGE_ACCESS_TOKEN
+        sync: false
+      - key: FACEBOOK_PAGE_ID
+        sync: false
+      - key: TIKTOK_APP_KEY
+        sync: false
+      - key: TIKTOK_APP_SECRET
+        sync: false
+      - key: TIKTOK_REDIRECT_URI
+        sync: false
+      # Email + SMS
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM_EMAIL
+        value: brewed@lwangblack.co
+      - key: SENDGRID_FROM_NAME
+        value: Lwang Black
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
 
   # Long-running worker (webhook DLQ / scheduled jobs — extend src/workers/queue.js)
   - type: worker

@@ -28,7 +28,7 @@ const mem = {
   settings: [
     { key: 'store_name',     value: 'Lwang Black' },
     { key: 'support_email',  value: 'brewed@lwangblack.co' },
-    { key: 'whatsapp',       value: '+61 2 8005 7000' },
+    { key: 'whatsapp',       value: '+61452523324' },
     { key: 'nabil_merchant_id', value: 'NB_MERCHANT_PLACEHOLDER' },
     { key: 'nabil_api_key',  value: '' },
     { key: 'nabil_secret_key', value: '' },

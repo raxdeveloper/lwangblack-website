@@ -179,7 +179,7 @@ router.post('/danger/reset', requireRole('owner'), async (req, res) => {
       mem.settings = [
         { key: 'store_name',    value: 'Lwang Black' },
         { key: 'support_email', value: 'brewed@lwangblack.co' },
-        { key: 'whatsapp',      value: '+61 2 8005 7000' },
+        { key: 'whatsapp',      value: '+61452523324' },
       ];
     } else {
       await db.query('DELETE FROM settings');
@@ -187,7 +187,7 @@ router.post('/danger/reset', requireRole('owner'), async (req, res) => {
         `INSERT INTO settings (key, value) VALUES
           ('store_name','Lwang Black'),
           ('support_email','brewed@lwangblack.co'),
-          ('whatsapp','+61 2 8005 7000')
+          ('whatsapp','+61452523324')
          ON CONFLICT DO NOTHING`
       );
     }
