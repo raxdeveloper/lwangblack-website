@@ -697,4 +697,125 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   SMOOTHNESS / PERF / SEO POLISH
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Hardware-accelerated transforms = no jank on scroll */
+.product-card,
+.hero-shop-btn,
+.btn-solid,
+.gsap-reveal-up,
+.gsap-reveal-fade {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Smooth fade-in for product grid as it renders */
+.product-grid > .product-card {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: lwbCardIn 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.product-grid > .product-card:nth-child(1) { animation-delay: 0ms; }
+.product-grid > .product-card:nth-child(2) { animation-delay: 60ms; }
+.product-grid > .product-card:nth-child(3) { animation-delay: 120ms; }
+.product-grid > .product-card:nth-child(4) { animation-delay: 180ms; }
+.product-grid > .product-card:nth-child(5) { animation-delay: 240ms; }
+.product-grid > .product-card:nth-child(6) { animation-delay: 300ms; }
+.product-grid > .product-card:nth-child(n+7) { animation-delay: 360ms; }
+
+@keyframes lwbCardIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Skeleton loader shown before products render — prevents CLS */
+.lwb-skeleton-card {
+  background: linear-gradient(110deg, rgba(255,255,255,0.04) 8%, rgba(255,255,255,0.08) 18%, rgba(255,255,255,0.04) 33%);
+  background-size: 200% 100%;
+  border-radius: 12px;
+  aspect-ratio: 3 / 4;
+  animation: lwbShimmer 1.4s ease-in-out infinite;
+}
+@keyframes lwbShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Prevent layout shift on product images (renderer uses aspect-ratio:1 already; this is a belt-and-braces) */
+.product-card img,
+.product-image-wrap img {
+  background: rgba(255,255,255,0.03);
+  transition: opacity 240ms ease;
+}
+
+/* Smoother nav + CTA hover transitions */
+.site-nav a,
+.btn-solid,
+.hero-shop-btn,
+.filter-btn,
+.product-card {
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 240ms ease,
+              color 240ms ease,
+              border-color 240ms ease,
+              box-shadow 280ms ease,
+              opacity 240ms ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+}
+
+/* Image lazy-load smooth fade */
+img[loading="lazy"] {
+  opacity: 0;
+  transition: opacity 350ms ease;
+}
+img[loading="lazy"].lwb-loaded,
+img[loading="lazy"].loaded,
+img[loading="lazy"][data-loaded="true"] {
+  opacity: 1;
+}
+/* Fallback: when JS not present, show images normally */
+.no-js img[loading="lazy"] { opacity: 1; }
+
+/* Respect users who request reduced motion (a11y + SEO best practice) */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .product-grid > .product-card {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* Better focus rings for keyboard users (a11y → SEO ranking signal) */
+:focus-visible {
+  outline: 2px solid var(--accent, #2e624c);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* Content-visibility: skip rendering work on offscreen sections (browsers that support it) */
+.fullscreen-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 800px;
+}
+
+/* Print-friendly (small SEO/UX win) */
+@media print {
+  .site-nav, .nav-mobile-overlay, #preloader, video, #cartToast { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+}
 
