@@ -23,8 +23,9 @@ function getRegionSafe(code) {
     slug: 'au',
     name: 'Australia',
     flagEmoji: '🇦🇺',
-    phone: '+61 2 8005 7000',
-    whatsapp: '+61280057000',
+    phone: '+61 452 523 324',
+    whatsapp: '+61452523324',
+    email: 'brewed@lwangblack.co',
     address: 'Sydney, Australia',
   };
 }
@@ -115,7 +116,6 @@ function initRegionUI() {
     const region = detail.region || getRegionSafe(code);
     updateRegionUI(code, region);
     updateContactSection(code, region);
-    updatePracticeAreas(code, region);
     updateFlagsGrid(code);
     updateSchemaContact(region);
     updateHomeProducts(code);
@@ -206,35 +206,12 @@ function updateContactSection(code, region) {
   if (elName)   elName.textContent  = safeRegion.name || '';
   if (elFlag)   elFlag.textContent  = safeRegion.flagEmoji || '';
   if (elWa) {
-    const msg = encodeURIComponent(`Hi Lwang Black ${safeRegion.name || ''} office, I'd like a consultation.`);
+    const msg = encodeURIComponent(`Hi Lwang Black, I'd like to know more about your coffee. Region: ${safeRegion.name || ''}`);
     const waNumber = String(safeRegion.whatsapp || '').replace(/[\s+]/g, '');
     if (waNumber) {
       elWa.href = `https://wa.me/${waNumber}?text=${msg}`;
     }
   }
-}
-
-function updatePracticeAreas(code, region) {
-  const grid = document.getElementById('practiceAreasGrid');
-  if (!grid) return;
-  const areas = window.PRACTICE_AREAS;
-  if (!areas || typeof areas !== 'object') return;
-
-  const safeRegion = region || getRegionSafe(code);
-  const priority = safeRegion.practicePriority || ['commercial', 'migration', 'corporate', 'property'];
-  const ordered = [
-    ...priority.map(id => areas[id]).filter(Boolean),
-    ...Object.values(areas).filter(a => !priority.includes(a.id))
-  ].slice(0, 6);
-
-  grid.innerHTML = ordered.map((area, i) => `
-    <div class="practice-card ${i === 0 ? 'practice-card--featured' : ''}" data-area="${area.id}">
-      <div class="practice-card-icon">${area.icon}</div>
-      <h3 class="practice-card-title">${area.title}</h3>
-      <p class="practice-card-desc">${area.desc}</p>
-      ${i === 0 ? `<span class="practice-featured-label">PRIORITY SERVICE · ${(safeRegion.name || '').toUpperCase()}</span>` : ''}
-    </div>
-  `).join('');
 }
 
 function updateFlagsGrid(activeCode) {

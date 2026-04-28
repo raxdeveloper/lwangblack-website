@@ -8,7 +8,191 @@ const { requireAuth, auditLog } = require('../middleware/auth');
 const { broadcast } = require('../ws');
 
 const router = express.Router();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TikTok OAuth callback — UNAUTHENTICATED (validated via signed state).
+// Must be registered BEFORE `router.use(requireAuth)` below.
+// TikTok will redirect here after the user authorises the app:
+//   GET /api/social/oauth/tiktok/callback?code=...&state=...
+// We exchange the code for an access_token and save it via the same
+// social_connections path that POST /api/social/connect uses.
+// ─────────────────────────────────────────────────────────────────────────────
+function signState(payload, secret) {
+  const json = JSON.stringify(payload);
+  const data = Buffer.from(json).toString('base64url');
+  const sig = crypto.createHmac('sha256', secret).update(data).digest('base64url');
+  return `${data}.${sig}`;
+}
+
+function verifyState(state, secret, maxAgeMs = 10 * 60 * 1000) {
+  if (typeof state !== 'string' || !state.includes('.')) return null;
+  const [data, sig] = state.split('.');
+  const expected = crypto.createHmac('sha256', secret).update(data).digest('base64url');
+  // Constant-time compare to avoid timing attacks
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(data, 'base64url').toString('utf8'));
+    if (!payload.iat || Date.now() - payload.iat > maxAgeMs) return null;
+    return payload;
+  } catch { return null; }
+}
+
+router.get('/oauth/tiktok/callback', async (req, res) => {
+  const { code, state, error: oauthError } = req.query;
+  const adminUrl = (process.env.SITE_URL || 'http://localhost:5173').replace(/\/$/, '') + '/admin/social';
+
+  if (oauthError) {
+    return res.redirect(`${adminUrl}?status=error&platform=tiktok&reason=${encodeURIComponent(String(oauthError))}`);
+  }
+  if (!code || !state) {
+    return res.redirect(`${adminUrl}?status=error&platform=tiktok&reason=missing_code_or_state`);
+  }
+
+  const payload = verifyState(state, config.jwt.secret);
+  if (!payload || !payload.userId) {
+    return res.redirect(`${adminUrl}?status=error&platform=tiktok&reason=invalid_state`);
+  }
+
+  const clientKey = process.env.TIKTOK_APP_KEY || process.env.TIKTOK_CLIENT_KEY;
+  const clientSecret = process.env.TIKTOK_APP_SECRET || process.env.TIKTOK_CLIENT_SECRET;
+  const redirectUri = process.env.TIKTOK_REDIRECT_URI;
+
+  if (!clientKey || !clientSecret || !redirectUri) {
+    console.error('[Social/TikTok] OAuth callback hit but env not configured');
+    return res.redirect(`${adminUrl}?status=error&platform=tiktok&reason=server_not_configured`);
+  }
+
+  // Exchange authorisation code for access token
+  // https://developers.tiktok.com/doc/oauth-user-access-token-management/
+  let tokenJson;
+  try {
+    const body = new URLSearchParams({
+      client_key: clientKey,
+      client_secret: clientSecret,
+      code: String(code),
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+    }).toString();
+
+    const tokenRes = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cache-Control': 'no-cache',
+      },
+      body,
+    });
+    tokenJson = await tokenRes.json();
+    if (!tokenRes.ok || tokenJson.error) {
+      console.error('[Social/TikTok] Token exchange failed:', tokenJson);
+      return res.redirect(`${adminUrl}?status=error&platform=tiktok&reason=${encodeURIComponent(tokenJson.error_description || tokenJson.error || 'token_exchange_failed')}`);
+    }
+  } catch (err) {
+    console.error('[Social/TikTok] Token exchange error:', err.message);
+    return res.redirect(`${adminUrl}?status=error&platform=tiktok&reason=network_error`);
+  }
+
+  const accessToken = tokenJson.access_token;
+  const refreshToken = tokenJson.refresh_token || null;
+  const openId = tokenJson.open_id || null;
+
+  // Fetch basic user info (display_name, username) for the connection record
+  let username = null, pageName = null;
+  try {
+    const infoRes = await fetch(
+      'https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,avatar_url,display_name,username',
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const infoJson = await infoRes.json().catch(() => ({}));
+    const u = infoJson?.data?.user || {};
+    username = u.username || u.display_name || null;
+    pageName = u.display_name || u.username || null;
+  } catch (err) {
+    // Non-fatal — we still save the token
+    console.warn('[Social/TikTok] user/info fetch failed:', err.message);
+  }
+
+  const encode = v => v ? Buffer.from(v).toString('base64') : null;
+  const keysData = JSON.stringify({
+    app_id: encode(clientKey),
+    app_secret: encode(clientSecret),
+    access_token: encode(accessToken),
+    refresh_token: encode(refreshToken),
+    open_id: openId,
+  });
+
+  try {
+    await db.query(`
+      INSERT INTO social_connections
+        (user_id, platform_id, keys_data, page_id, page_name, username, is_active, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
+      ON CONFLICT (user_id, platform_id) DO UPDATE
+        SET keys_data = $3,
+            page_id   = $4,
+            page_name = $5,
+            username  = $6,
+            is_active = true,
+            updated_at = NOW()
+    `, [payload.userId, 'tiktok', keysData, openId, pageName, username]);
+  } catch (dbErr) {
+    // Fall back to the in-memory store used elsewhere in this file
+    try {
+      require('../db/memory-store').setSocialConnection(payload.userId, 'tiktok', {
+        platform: 'tiktok',
+        keysData: {
+          app_id: encode(clientKey),
+          app_secret: encode(clientSecret),
+          access_token: encode(accessToken),
+          refresh_token: encode(refreshToken),
+          open_id: openId,
+        },
+        pageId: openId,
+        pageName,
+        username,
+      });
+    } catch (memErr) {
+      console.error('[Social/TikTok] Failed to persist connection:', dbErr?.message, memErr?.message);
+      return res.redirect(`${adminUrl}?status=error&platform=tiktok&reason=db_error`);
+    }
+  }
+
+  return res.redirect(`${adminUrl}?status=connected&platform=tiktok`);
+});
+
+// All routes below this line require authentication
 router.use(requireAuth);
+
+// ── GET /api/social/oauth/tiktok/start ────────────────────────────────────────
+// Returns the TikTok authorisation URL (with signed state). The admin UI
+// either redirects the browser to it or opens it in a popup.
+router.get('/oauth/tiktok/start', (req, res) => {
+  const clientKey = process.env.TIKTOK_APP_KEY || process.env.TIKTOK_CLIENT_KEY;
+  const redirectUri = process.env.TIKTOK_REDIRECT_URI;
+  if (!clientKey || !redirectUri) {
+    return res.status(503).json({
+      error: 'TikTok OAuth not configured. Set TIKTOK_APP_KEY, TIKTOK_APP_SECRET, and TIKTOK_REDIRECT_URI on the API server.',
+    });
+  }
+
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const state = signState(
+    { userId: req.user.id, nonce, iat: Date.now() },
+    config.jwt.secret
+  );
+
+  const scopes = (PLATFORMS.tiktok.scopes || []).join(',');
+  const authUrl = `https://www.tiktok.com/v2/auth/authorize/?` + new URLSearchParams({
+    client_key: clientKey,
+    response_type: 'code',
+    scope: scopes,
+    redirect_uri: redirectUri,
+    state,
+  }).toString();
+
+  res.json({ url: authUrl, state });
+});
 
 // ── Platform Definitions ─────────────────────────────────────────────────────
 const PLATFORMS = {
@@ -394,11 +578,70 @@ router.get('/analytics/:platform', requireAuth, async (req, res) => {
     }
   }
 
-  // ── TikTok — API requires server-side OAuth which needs a redirect flow ────
+  // ── TikTok — Display API: user/info ─────────────────────────────────────────
+  // Connect via /api/social/oauth/tiktok/start (full OAuth flow) or save a
+  // user access_token manually via POST /api/social/connect.
   if (platform === 'tiktok') {
-    return res.status(503).json({
-      error: 'TikTok analytics require OAuth. Full OAuth flow coming soon — contact support.',
-    });
+    if (!accessToken) {
+      return res.status(503).json({
+        error: 'TikTok is connected but the access token is missing. Reconnect via Settings → Social Media.',
+      });
+    }
+    try {
+      const fields = 'open_id,union_id,avatar_url,display_name,username,follower_count,following_count,likes_count,video_count';
+      const userRes = await fetch(
+        `https://open.tiktokapis.com/v2/user/info/?fields=${fields}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      const userJson = await userRes.json().catch(() => ({}));
+      if (!userRes.ok || userJson.error?.code) {
+        const msg = userJson.error?.message || userJson.error?.code || 'TikTok API error';
+        return res.status(502).json({ error: `TikTok: ${msg}. Token may be expired — reconnect.` });
+      }
+      const u = userJson.data?.user || {};
+
+      // Recent videos for the topPosts list (Display API)
+      let topPosts = [];
+      try {
+        const vidRes = await fetch(
+          'https://open.tiktokapis.com/v2/video/list/?fields=id,title,view_count,like_count,comment_count,share_count,create_time',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ max_count: 5 }),
+          }
+        );
+        if (vidRes.ok) {
+          const vidJson = await vidRes.json().catch(() => ({}));
+          topPosts = (vidJson.data?.videos || []).map(v => ({
+            id: v.id,
+            caption: (v.title || '').substring(0, 120) || '(No caption)',
+            likes: v.like_count || 0,
+            reach: v.view_count || 0,
+            date: v.create_time ? new Date(v.create_time * 1000).toISOString() : null,
+          }));
+        }
+      } catch { /* video list is optional — degrade gracefully */ }
+
+      return res.json({
+        platform,
+        platformName: PLATFORMS.tiktok.name,
+        followers:         u.follower_count || 0,
+        likes:             u.likes_count || 0,
+        reach:             topPosts.reduce((s, p) => s + (p.reach || 0), 0),
+        impressions:       topPosts.reduce((s, p) => s + (p.reach || 0), 0),
+        clicks:            0,
+        ordersFromSocial:  0,
+        revenueFromSocial: 0,
+        topPosts,
+      });
+    } catch (err) {
+      console.error('[Social/TikTok] Analytics error:', err.message);
+      return res.status(502).json({ error: 'Could not fetch TikTok analytics. Check connectivity and reconnect if needed.' });
+    }
   }
 
   // ── Credentials missing but connection exists ──────────────────────────────
