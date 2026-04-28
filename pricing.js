@@ -1009,7 +1009,11 @@ async function initLwbProductGrids() {
   const grid = document.querySelector(sel);
   if (!grid) return;
 
-  grid.innerHTML = `<div class="lwb-loading" style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)">Loading products…</div>`;
+  // Skeleton placeholders — keep layout stable while products fetch (avoids CLS).
+  const skeletonCount = 6;
+  grid.innerHTML = Array.from({ length: skeletonCount }, () =>
+    `<div class="lwb-skeleton-card" aria-hidden="true"></div>`
+  ).join('');
 
   const products = await lwbFetchProducts('all');
   _lwbProductCache = products;
@@ -1056,8 +1060,64 @@ async function initLwbProductGrids() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  initLwbProductGrids();
+// Inject Product / ItemList JSON-LD for SEO when a grid is on the page.
+function lwbInjectProductSchema(products) {
+  try {
+    if (!Array.isArray(products) || !products.length) return;
+    if (document.getElementById('lwb-products-jsonld')) return;
+    const region = (localStorage.getItem('lwb_region') || 'NP');
+    const currencyMap = { NP:'NPR', AU:'AUD', US:'USD', GB:'GBP', CA:'CAD', NZ:'NZD', JP:'JPY', EU:'EUR' };
+    const items = products.slice(0, 30).map((p, i) => {
+      const handle = p.handle || p.id;
+      const url = 'https://www.lwangblack.co/product.html?id=' + encodeURIComponent(handle);
+      const priceVal = (p.prices && (p.prices[region] != null ? p.prices[region] : p.prices.US));
+      return {
+        '@type': 'ListItem',
+        position: i + 1,
+        item: {
+          '@type': 'Product',
+          '@id': url,
+          name: p.title || p.name || handle,
+          url,
+          image: (p.images && p.images[0]) || p.image || '',
+          brand: { '@type': 'Brand', name: 'Lwang Black' },
+          category: p.category || 'Coffee',
+          offers: priceVal != null ? {
+            '@type': 'Offer',
+            url,
+            priceCurrency: currencyMap[region] || 'USD',
+            price: Number(priceVal).toFixed(2),
+            availability: 'https://schema.org/InStock',
+            itemCondition: 'https://schema.org/NewCondition',
+          } : undefined,
+          aggregateRating: (p.reviewCount > 0 && p.rating)
+            ? { '@type': 'AggregateRating', ratingValue: Number(p.rating).toFixed(1), reviewCount: p.reviewCount }
+            : undefined,
+        }
+      };
+    });
+    const ld = {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'Lwang Black Products',
+      numberOfItems: items.length,
+      itemListElement: items,
+    };
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'lwb-products-jsonld';
+    script.textContent = JSON.stringify(ld);
+    document.head.appendChild(script);
+  } catch (e) {
+    console.warn('[lwb] product schema inject failed', e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await initLwbProductGrids();
+  if (Array.isArray(_lwbProductCache) && _lwbProductCache.length) {
+    lwbInjectProductSchema(_lwbProductCache);
+  }
 });
 
 window.lwbPricing = {
